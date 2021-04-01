@@ -1,7 +1,10 @@
-import numpy as np
-from sklearn.neighbors import KDTree, DistanceMetric
-a = np.array([1, 2, 3])
-b = np.empty([0])
-b = np.append(b, 2)
-print(type(np.mean(b)))
-print(KDTree.valid_metrics)
+from vowpalwabbit import pyvw
+import timeit
+
+def retx(x):
+    return x
+
+num_actions = 100
+bandwidth = 5
+
+vw = pyvw.vw("--cats " + str(num_actions) + "  --bandwidth " + str(bandwidth) + " --min_value 0 --max_value 100 --chain_hash --coin --epsilon 0.2 -q :: ")

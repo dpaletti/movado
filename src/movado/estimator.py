@@ -10,8 +10,10 @@ class Estimator(abc.ABC):
     def estimate(self, design_point) -> float:
         pass
 
-    def get_dataset(self) -> "np.ndarray":
+    @abstractmethod
+    def train(self, example) -> None:
         pass
 
-    def train(self, example) -> None:
+    @abstractmethod
+    def get_accuracy(self):
         pass

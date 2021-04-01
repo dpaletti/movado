@@ -5,6 +5,7 @@ from movado.estimator import Estimator
 import numpy as np
 from sklearn.neighbors import KDTree, DistanceMetric
 from vowpalwabbit import pyvw
+import time
 
 
 class DistanceController(Controller):
@@ -21,9 +22,10 @@ class DistanceController(Controller):
         super().__init__(scaler=scaler)
         self.__exact: Callable["np.ndarray", Union[int, float]] = exact_fitness
         self.__estimator: Estimator = estimator
+        self.__dataset: "np.ndarray" = np.empty([0, 0])
         self.__distance_metric = distance_metric
         self.__nth_nearest = nth_nearest
-        self.__last_dataset_size: int = 0
+        self.__are_neighbours_to_recompute: bool = True
         self.__knn: Optional[KDTree] = None
         self.__threshold: str = threshold
         self.__distance_metric_kwargs: Dict[str, Union[int, float]] = {
@@ -40,14 +42,46 @@ class DistanceController(Controller):
                 + " when using fixed threshold "
             )
         if self.__threshold == "mab":
-            self.__init_mab()
+            if not kwargs.get("mab_actions"):
+                kwargs["mab_actions"] = 100
+            if not kwargs.get("mab_bandwidth"):
+                kwargs["mab_bandwidth"] = 5
+            self.__mab = pyvw.vw(
+                "--cats "
+                + kwargs["mab_actions"]
+                + "  --bandwidth "
+                + kwargs["mab_bandwidth"]
+                + " --min_value 0 --max_value 100 --chain_hash --coin --epsilon 0.2 -q :: "
+            )
 
     def fitness(self, point: "np.ndarray") -> Union[int, float]:
-        if self.__get_nth_nearest_distance(point) < self.__get_threshold():
-            return self.__estimator.estimate(point)
-        return self.__exact(point)
+        accuracy = 1
+        if self.__get_nth_nearest_distance(point) < self.__get_threshold(point):
+            estimation, exec_time = Controller.measure_execution_time(
+                self.__estimator.estimate, point
+            )
+            if self.__threshold == "mab":
+                self.__learn_mab(
+                    self.get_time_error_z_score(
+                        np.array(exec_time), self.__estimator.get_accuracy()
+                    )
+                )
+            return estimation
 
-    def __get_threshold(self) -> float:
+        exact, exec_time = self.__exact(point)
+        if self.__threshold == "mab":
+            self.__learn_mab(
+                self.get_time_error_z_score(np.array(exec_time), np.array(1))
+            )
+        return exact
+
+    def add_point(self, point: "np.ndarray") -> None:
+        np.append(self.__dataset, point, axis=0)
+        self.__are_neighbours_to_recompute = True
+
+    def __get_threshold(self, point: "np.ndarray") -> float:
+        if self.__threshold == "mab":
+            return self.__get_threshold_mab(point)
         return globals()["__get_threshold_" + self.__threshold]()
 
     def __get_threshold_fixed(self) -> float:
@@ -59,26 +93,18 @@ class DistanceController(Controller):
     def __get_threshold_median(self):
         return np.median(self.__get_distances())
 
-    def __init_mab(self):
-        model = pyvw.vw("–cats", quiet=True)
-
-    def __get_threshold_mab(self):
-        pass
-
     def __get_distances(self) -> "np.ndarray":
         distances: "np.ndarray" = np.empty([0])
-        for point in self.__estimator.get_dataset():
+        for point in self.__dataset:
             distances = np.append(distances, self.__get_nth_nearest_distance(point))
         return distances
 
     def __get_nth_nearest_distance(self, point: "np.ndarray") -> float:
-        current_size: int = self.__estimator.get_dataset().size
-        if current_size != self.__last_dataset_size:
+        if self.__are_neighbours_to_recompute:
             self.__knn = KDTree(
-                self.__estimator.get_dataset(),
+                self.__dataset,
                 metric=DistanceMetric.get_metric(
                     self.__distance_metric, **self.__distance_metric_kwargs
                 ),
             )
-            self.__last_dataset_size = current_size
         return self.__knn.query([point], k=3)[0][0][self.__nth_nearest - 1]
