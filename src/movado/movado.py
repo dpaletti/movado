@@ -28,10 +28,18 @@ def approximate(fitness: ["np.ndarray", Union[int, float]]):
         if is_first_call:
             if args:
                 print("Non-keyword arguments are ignored")
+            selected_controller = kwargs.get("controller")
+            if not selected_controller:
+                selected_controller = "Distance"
             controller = get_class(
-                Controller, kwargs.get("controller").lower() + "Controller"
+                Controller, selected_controller.lower().capitalize() + "Controller"
             )(fitness, estimator)
-            estimator = get_class(Estimator, kwargs.get("estimator"))()
+            selected_estimator = kwargs.get("estimator")
+            if not selected_estimator:
+                selected_estimator = ""
+            estimator = get_class(
+                Estimator,
+            )()
             is_first_call = False
         else:
             controller.fitness()

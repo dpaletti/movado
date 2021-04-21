@@ -7,8 +7,6 @@ import time
 
 
 class Controller(abc.ABC):
-    default: str = "DistanceController"
-
     @abstractmethod
     def __init__(self, scaler="StandardScaler"):
         self.__scaler: Union[StandardScaler, RobustScaler] = (

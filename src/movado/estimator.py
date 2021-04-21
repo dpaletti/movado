@@ -1,17 +1,15 @@
 import abc
 from abc import abstractmethod
-import numpy as np
+from typing import Dict, List
 
 
 class Estimator(abc.ABC):
-    default: str = ""  # TODO: set default estimator
-
     @abstractmethod
     def estimate(self, design_point) -> float:
         pass
 
     @abstractmethod
-    def train(self, example) -> None:
+    def train(self, point: List[float], metrics: List[float]) -> None:
         pass
 
     @abstractmethod
