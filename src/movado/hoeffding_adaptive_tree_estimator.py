@@ -1,6 +1,6 @@
 from typing import List, Dict
 
-from estimator import Estimator
+from movado.estimator import Estimator
 import river as rv
 from abc import ABC, abstractmethod
 

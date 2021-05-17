@@ -1,8 +1,7 @@
-from typing import List, Tuple
+from typing import List
 from pathlib import Path
 from abc import ABC, abstractmethod
 import numpy as np
-from vowpalwabbit import pyvw
 
 
 class MabHandler(ABC):

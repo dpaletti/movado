@@ -1,9 +1,9 @@
 from pathlib import Path
 from typing import List, Callable, Dict, Any
 
-from controller import Controller
-from estimator import Estimator
-from mab_handler_cb import MabHandlerCB
+from movado.controller import Controller
+from movado.estimator import Estimator
+from movado.mab_handler_cb import MabHandlerCB
 
 
 class MabController(Controller):

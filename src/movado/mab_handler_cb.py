@@ -1,7 +1,7 @@
 from typing import List, Tuple
 
 from vowpalwabbit import pyvw
-from mab_handler import MabHandler
+from movado.mab_handler import MabHandler
 import numpy as np
 
 

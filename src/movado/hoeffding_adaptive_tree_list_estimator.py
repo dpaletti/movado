@@ -1,6 +1,6 @@
 from typing import List
 
-from mab_handler_cb.hoeffding_adaptive_tree_estimator import (
+from movado.hoeffding_adaptive_tree_estimator import (
     HoeffdingAdaptiveTreeEstimator,
 )
 import river as rv

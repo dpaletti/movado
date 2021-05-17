@@ -5,8 +5,8 @@ import numpy as np
 import time
 from pathlib import Path
 
-from estimator import Estimator
-from mab_handler import MabHandler
+from movado.estimator import Estimator
+from movado.mab_handler import MabHandler
 
 
 class Controller(ABC):

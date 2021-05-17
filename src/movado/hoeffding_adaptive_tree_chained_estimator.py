@@ -1,5 +1,5 @@
 from typing import List, Dict
-from hoeffding_adaptive_tree_estimator import (
+from movado.hoeffding_adaptive_tree_estimator import (
     HoeffdingAdaptiveTreeEstimator,
 )
 import river as rv

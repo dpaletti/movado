@@ -3,8 +3,8 @@ from typing import Union, Optional, Dict, List, Any
 import numpy as np
 from sklearn.neighbors import KDTree, DistanceMetric
 
-from controller import Controller
-from mab_handler_cats import MabHandlerCATS
+from movado.controller import Controller
+from movado.mab_handler_cats import MabHandlerCATS
 
 
 class DistanceController(Controller):
