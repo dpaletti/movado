@@ -1,19 +1,15 @@
-from typing import List, Dict
-
-from movado.estimator import Estimator
 import river as rv
-from abc import ABC, abstractmethod
+
+from movado.model import Model
 
 
-class HoeffdingAdaptiveTreeEstimator(Estimator, ABC):
-    @abstractmethod
+class HoeffdingAdaptiveTreeModel(Model):
     def __init__(
         self,
         eta=2,
         budget=2000,
-        debug=False,
     ):
-        super(HoeffdingAdaptiveTreeEstimator, self).__init__(debug)
+        super(HoeffdingAdaptiveTreeModel, self).__init__()
         self._model = rv.preprocessing.StandardScaler()
         self._model |= rv.feature_extraction.RBFSampler()
 
@@ -41,11 +37,3 @@ class HoeffdingAdaptiveTreeEstimator(Estimator, ABC):
             eta=eta,
             verbose=True,
         )
-
-    @staticmethod
-    def _X_to_river(X: List[float]) -> Dict[str, float]:
-        return dict(zip(["feature_" + str(i) for i in range(len(X))], X))
-
-    @staticmethod
-    def _y_to_river(y: List[float]) -> Dict[int, float]:
-        return dict(zip(range(len(y)), y))

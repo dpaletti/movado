@@ -12,22 +12,25 @@ class MabController(Controller):
         exact_fitness: Callable[[List[float]], float],
         estimator: Estimator,
         debug: bool = False,
-        **kwargs
+        epsilon: float = 0.2,
     ):
         super().__init__(exact_fitness, estimator, debug)
-        self.__mab = MabHandlerCB(debug, **kwargs)
+        self.__mab = MabHandlerCB(debug, epsilon=epsilon)
         self.__is_first_call = True
 
         if self._debug:
             Path(self._controller_debug).open("a").write(
-                "Point, Exec_Time, MAE, Estimation\n"
+                "Point, Exec_Time, Error, Estimation\n"
             )
 
     def compute_objective(self, point: List[int]) -> float:
-        decision = self.__mab.predict(point)
-        if decision == 2 or self.__is_first_call:
+        decision = self.__mab.predict([*point, self._estimator.get_error()])
+        accuracy = self._estimator.get_error()
+        if decision == 2 or accuracy == 0.0:
             out, exec_time = self._compute_exact(
-                point, (self.__mab, 2) if not self.__is_first_call else None
+                point,
+                (self.__mab, 2) if not self.__is_first_call else None,
+                1 if accuracy == 0.0 else None,
             )
         else:
             out, exec_time = self._compute_estimated(point, (self.__mab, 1))
@@ -38,8 +41,8 @@ class MabController(Controller):
                 {
                     "Point": point,
                     "Exec_Time": exec_time,
-                    "MAE": self._estimator.get_error(),
-                    "Estimation": 0 if decision == 2 or self.__is_first_call else 1,
+                    "Error": self._estimator.get_error(),
+                    "Estimation": 0 if decision == 2 or accuracy == 0.0 else 1,
                 }
             )
         self.__is_first_call = False
@@ -51,7 +54,7 @@ class MabController(Controller):
             + ", "
             + str(debug_info["Exec_Time"])
             + ", "
-            + str(debug_info["MAE"])
+            + str(debug_info["Error"])
             + ", "
             + str(debug_info["Estimation"])
             + "\n"

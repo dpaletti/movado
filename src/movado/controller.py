@@ -18,8 +18,8 @@ class Controller(ABC):
         debug=False,
     ):
         self.__scaler = StandardScaler()
-        self.__time_dataset: "np.ndarray" = np.empty_like((1, -1))
-        self.__error_dataset: "np.ndarray" = np.empty_like((1, -1))
+        self.__time_dataset: List[float] = []
+        self.__error_dataset: List[float] = []
         self.__to_reshape = False
         self._exact: Callable[[List[float]], float] = exact_fitness
         self._estimator: Estimator = estimator
@@ -37,18 +37,21 @@ class Controller(ABC):
         self,
         point: List[int],
         mab: Optional[Tuple[MabHandler, Union[int, float]]] = None,
-    ) -> Tuple[float, float]:
+        mab_forced_probability: Optional[int] = None,
+    ) -> Tuple[List[float], float]:
         exact, exec_time = Controller.measure_execution_time(self._exact, point)
         self._estimator.train(point, exact)
         if mab:
-            mab[0].learn(mab[1], self.get_time_error_z_score(exec_time, 0), point)
+            mab[0].learn(
+                mab[1], self.get_time_error_z_score(exec_time, 0), point
+            ), mab_forced_probability
         return exact, exec_time
 
     def _compute_estimated(
         self,
         point: List[int],
         mab: Optional[Tuple[MabHandler, Union[int, float]]] = None,
-    ):
+    ) -> Tuple[List[float], float]:
         estimation, exec_time = Controller.measure_execution_time(
             self._estimator.predict, point
         )
@@ -65,15 +68,18 @@ class Controller(ABC):
         pass
 
     def get_time_error_z_score(self, response_time: float, error: float) -> float:
-        self.__time_dataset = np.append(self.__time_dataset, response_time)
-        self.__error_dataset = np.append(self.__error_dataset, error)
+        self.__time_dataset.append(response_time)
+        self.__error_dataset.append(error)
         if len(self.__time_dataset) > 1:
-            self.__time_dataset = np.reshape(self.__time_dataset, (-1, 1))
-            self.__error_dataset = np.reshape(self.__error_dataset, (-1, 1))
-        self.__scaler.fit(self.__time_dataset)
-        time_z_score: float = self.__scaler.transform(self.__time_dataset)[-1][0]
-        self.__scaler.fit(self.__error_dataset)
-        error_z_score: float = self.__scaler.transform(self.__error_dataset)[-1][0]
+            reshaped_time = np.reshape(self.__time_dataset, (-1, 1))
+            reshaped_error = np.reshape(self.__error_dataset, (-1, 1))
+        else:
+            reshaped_time = np.reshape(self.__time_dataset, (1, -1))
+            reshaped_error = np.reshape(self.__error_dataset, (1, -1))
+        self.__scaler.fit(reshaped_time)
+        time_z_score: float = self.__scaler.transform(reshaped_time)[-1][0]
+        self.__scaler.fit(reshaped_error)
+        error_z_score: float = self.__scaler.transform(reshaped_error)[-1][0]
         return -time_z_score - error_z_score
 
     @staticmethod

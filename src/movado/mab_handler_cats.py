@@ -14,7 +14,7 @@ class MabHandlerCATS(MabHandler):
     ):
         super(MabHandlerCATS, self).__init__(debug)
         self._sample_prefix = "ca "
-        if mab_bandwidth > 0:
+        if mab_bandwidth < 0:
             raise Exception(
                 "Invalid bandwidth value: "
                 + str(mab_bandwidth)

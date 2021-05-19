@@ -15,7 +15,7 @@ class DistanceController(Controller):
         estimator,
         nth_nearest=3,
         distance_metric="minkowski",
-        threshold="mean",
+        threshold="mab",
         debug=False,
         **kwargs,
     ):
@@ -45,10 +45,15 @@ class DistanceController(Controller):
                 kwargs["mab_actions"] = 100
             if not kwargs.get("mab_bandwidth"):
                 kwargs["mab_bandwidth"] = 5
-            self.__mab = MabHandlerCATS(debug=debug)
+            if kwargs.get("mab_epsilon"):
+                self.__mab = MabHandlerCATS(
+                    debug=debug, epsilon=kwargs.get("mab_epsilon")
+                )
+            else:
+                self.__mab = MabHandlerCATS(debug=debug)
         if self._debug:
             Path(self._controller_debug).open("a").write(
-                "Threshold, Nth_Nearest_Distance, Point, Exec_Time, MAE, Estimation\n"
+                "Threshold, Nth_Nearest_Distance, Point, Exec_Time, Error, Estimation\n"
             )
 
     def compute_objective(self, point: List[int]) -> float:
@@ -57,12 +62,14 @@ class DistanceController(Controller):
         self.__add_point(point)
         threshold = self.__get_threshold(point)
         nth_distance = self.__get_nth_nearest_distance(point)
+        error = self._estimator.get_error()
 
-        if nth_distance > threshold or not self.__evaluated_points:
+        if nth_distance > threshold or error == 0.0:
             out, exec_time = self._compute_exact(
                 point,
-                (self.__mab, threshold)
-                if self.__threshold == "mab" and not self.__evaluated_points
+                (self.__mab, threshold) if self.__threshold == "mab" else None,
+                mab_forced_probability=1
+                if self.__threshold == "mab" and error == 0.0
                 else None,
             )
         else:
@@ -74,18 +81,16 @@ class DistanceController(Controller):
         if self._debug:
             self._write_debug(
                 {
-                    "Threshold": 0 if not self.__evaluated_points else threshold,
+                    "Threshold": 0 if error == 0.0 else threshold,
                     "Nth_Nearest_Distance": 0
                     if not self.__evaluated_points
                     else nth_distance,
                     "Point": point,
                     "Exec_Time": exec_time,
-                    "MAE": 0
-                    if nth_distance > threshold or not self.__evaluated_points
+                    "Error": error
+                    if nth_distance > threshold or error == 0.0
                     else self._estimator.get_error(),
-                    "Estimation": 0
-                    if nth_distance > threshold or not self.__evaluated_points
-                    else 1,
+                    "Estimation": 0 if nth_distance > threshold or error == 0.0 else 1,
                 }
             )
         return out
@@ -100,7 +105,7 @@ class DistanceController(Controller):
             + ", "
             + str(debug_info["Exec_Time"])
             + ", "
-            + str(debug_info["MAE"])
+            + str(debug_info["Error"])
             + ", "
             + str(debug_info["Estimation"])
             + "\n"

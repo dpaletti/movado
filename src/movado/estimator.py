@@ -6,10 +6,6 @@ from pathlib import Path
 
 class Estimator(abc.ABC):
     @abstractmethod
-    def __init__(self, debug=False):
-        self._debug = debug
-
-    @abstractmethod
     def predict(self, X: List[float]) -> List[float]:
         pass
 

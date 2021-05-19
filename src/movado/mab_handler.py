@@ -21,14 +21,24 @@ class MabHandler(ABC):
     def predict(self, context: List[float]) -> float:
         pass
 
-    def learn(self, action: float, cost: float, context: List[float]) -> None:
+    def learn(
+        self,
+        action: float,
+        cost: float,
+        context: List[float],
+        forced_predict_probability: int = None,
+    ) -> None:
         sample: str = (
             self._sample_prefix
             + str(action)
             + ":"
             + str(cost)
             + ":"
-            + str(self._last_predict_probability)
+            + (
+                str(self._last_predict_probability)
+                if not forced_predict_probability
+                else str(forced_predict_probability)
+            )
             + " | "
         )
         for feature in context:
