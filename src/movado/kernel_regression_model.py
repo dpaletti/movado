@@ -29,7 +29,21 @@ class KernelRegressionModel(Model):
                             },
                         )
                     ],
-                    "l2": np.linspace(0.001, 0.4, endpoint=True, num=20),
+                    "l2": [
+                        0.001,
+                        0.002,
+                        0.004,
+                        0.008,
+                        0.016,
+                        0.032,
+                        0.064,
+                        0.128,
+                        0.256,
+                        0.512,
+                        0.1024,
+                        0.2048,
+                        0.4096,
+                    ],
                     "intercept_lr": [
                         rv.optim.schedulers.Optimal(loss=rv.optim.losses.Squared())
                     ],

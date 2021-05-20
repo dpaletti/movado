@@ -13,7 +13,7 @@ class Controller(ABC):
     @abstractmethod
     def __init__(
         self,
-        exact_fitness: Callable[[List[float]], float],
+        exact_fitness: Callable[[List[float]], List[float]],
         estimator: Estimator,
         debug=False,
     ):
@@ -21,7 +21,7 @@ class Controller(ABC):
         self.__time_dataset: List[float] = []
         self.__error_dataset: List[float] = []
         self.__to_reshape = False
-        self._exact: Callable[[List[float]], float] = exact_fitness
+        self._exact: Callable[[List[float]], List[float]] = exact_fitness
         self._estimator: Estimator = estimator
         self._debug = debug
         if self._debug:
