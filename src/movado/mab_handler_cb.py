@@ -17,4 +17,5 @@ class MabHandlerCB(MabHandler):
         context_str.strip()
         probability_distribution: Tuple[float, float] = self._mab.predict(context_str)
         self._last_predict_probability = np.max(probability_distribution)
+        self.get_mean_cost()
         return np.argmax(probability_distribution) + 1

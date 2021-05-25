@@ -5,10 +5,12 @@ from movado.model import Model
 
 
 class ChainedEstimator(Estimator):
-    def __init__(self, model_to_chain: Model):
+    def __init__(self, model_to_chain: Model, outputs: int):
         super(ChainedEstimator, self).__init__()
         self._chained_model: rv.multioutput.RegressorChain = (
-            rv.multioutput.RegressorChain(model_to_chain.get_model())
+            rv.multioutput.RegressorChain(
+                model_to_chain.get_model(), order=list(range(outputs))
+            )
         )
         self._metric = rv.metrics.RegressionMultiOutput(rv.metrics.SMAPE())
 

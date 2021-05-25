@@ -13,13 +13,19 @@ class DistanceController(Controller):
         self,
         exact_fitness,
         estimator,
+        self_exact: Optional[object] = None,
         nth_nearest=3,
         distance_metric="minkowski",
         threshold="mab",
         debug=False,
         **kwargs,
     ):
-        super().__init__(exact_fitness, estimator, debug)
+        super().__init__(
+            exact_fitness=exact_fitness,
+            estimator=estimator,
+            self_exact=self_exact,
+            debug=debug,
+        )
 
         self.__evaluated_points: List[List[float]] = []
         self.__threshold: str = threshold
@@ -49,15 +55,21 @@ class DistanceController(Controller):
                 self.__mab = MabHandlerCATS(
                     debug=debug, epsilon=kwargs.get("mab_epsilon")
                 )
+                self.__weight_mab = MabHandlerCATS(
+                    debug=debug,
+                    epsilon=kwargs.get("mab_epsilon"),
+                    debug_path="mab_weight",
+                )
             else:
                 self.__mab = MabHandlerCATS(debug=debug)
+                self.__weight_mab = MabHandlerCATS(debug=debug, debug_path="mab_weight")
         if self._debug:
             Path(self._controller_debug).open("a").write(
                 "Threshold, Nth_Nearest_Distance, Point, Exec_Time, Error, Estimation\n"
             )
 
-    def compute_objective(self, point: List[int]) -> float:
-        out: float
+    def compute_objective(self, point: List[int]) -> List[float]:
+        out: List[float]
         mae: float
         self.__add_point(point)
         threshold = self.__get_threshold(point)
@@ -67,14 +79,16 @@ class DistanceController(Controller):
         if nth_distance > threshold or error == 0.0:
             out, exec_time = self._compute_exact(
                 point,
-                (self.__mab, threshold) if self.__threshold == "mab" else None,
-                mab_forced_probability=1
-                if self.__threshold == "mab" and error == 0.0
-                else None,
+                (self.__mab, threshold * 100) if self.__threshold == "mab" else None,
+                1 if self.__threshold == "mab" and error == 0.0 else None,
+                # self.__weight_mab if self.__threshold == "mab" else None,
+                # 1 if self.__threshold == "mab" and error == 0.0 else None,
             )
         else:
             out, exec_time = self._compute_estimated(
-                point, (self.__mab, threshold) if self.__threshold == "mab" else None
+                point,
+                (self.__mab, threshold * 100) if self.__threshold == "mab" else None,
+                # self.__weight_mab if self.__threshold == "mab" else None,
             )
 
         # TODO probably this check can be done only once

@@ -1,21 +1,31 @@
 from pathlib import Path
-from typing import List, Callable, Dict, Any
+from typing import List, Callable, Dict, Any, Optional
 
 from movado.controller import Controller
 from movado.estimator import Estimator
 from movado.mab_handler_cb import MabHandlerCB
+from movado.mab_handler_cats import MabHandlerCATS
 
 
 class MabController(Controller):
     def __init__(
         self,
-        exact_fitness: Callable[[List[float]], float],
+        exact_fitness: Callable[[List[float]], List[float]],
         estimator: Estimator,
+        self_exact: Optional[object] = None,
         debug: bool = False,
         epsilon: float = 0.2,
     ):
-        super().__init__(exact_fitness, estimator, debug)
+        super().__init__(
+            exact_fitness=exact_fitness,
+            estimator=estimator,
+            self_exact=self_exact,
+            debug=debug,
+        )
         self.__mab = MabHandlerCB(debug, epsilon=epsilon)
+        self.__weight_mab = MabHandlerCATS(
+            debug=debug, epsilon=epsilon, debug_path="mab_weight"
+        )
         self.__is_first_call = True
 
         if self._debug:
@@ -23,17 +33,21 @@ class MabController(Controller):
                 "Point, Exec_Time, Error, Estimation\n"
             )
 
-    def compute_objective(self, point: List[int]) -> float:
+    def compute_objective(self, point: List[int]) -> List[float]:
         decision = self.__mab.predict([*point, self._estimator.get_error()])
         accuracy = self._estimator.get_error()
         if decision == 2 or accuracy == 0.0:
             out, exec_time = self._compute_exact(
                 point,
-                (self.__mab, 2) if not self.__is_first_call else None,
+                (self.__mab, 2),
+                1 if accuracy == 0.0 else None,
+                self.__weight_mab,
                 1 if accuracy == 0.0 else None,
             )
         else:
-            out, exec_time = self._compute_estimated(point, (self.__mab, 1))
+            out, exec_time = self._compute_estimated(
+                point, (self.__mab, 1), self.__weight_mab
+            )
 
         # TODO probably this check can be done only once
         if self._debug:
@@ -59,3 +73,6 @@ class MabController(Controller):
             + str(debug_info["Estimation"])
             + "\n"
         )
+
+    def get_mean_cost(self):
+        return self.__mab.get_mean_cost()

@@ -11,8 +11,9 @@ class MabHandlerCATS(MabHandler):
         mab_bandwidth: int = 1,
         epsilon: float = 0.2,
         debug=False,
+        debug_path: str = "mab",
     ):
-        super(MabHandlerCATS, self).__init__(debug)
+        super(MabHandlerCATS, self).__init__(debug, debug_path)
         self._sample_prefix = "ca "
         if mab_bandwidth < 0:
             raise Exception(
