@@ -159,19 +159,39 @@ class Controller(ABC):
 
     def get_time_error_correlation(self):
         try:
+            samples = len(self.__error_dataset)
+            independent_vars = 2
             if (
                 self.__is_constant(self.__error_dataset)
                 or self.__is_constant(self.__time_dataset)
                 or self.__is_constant(self.__cost_dataset)
+                or samples - independent_vars == 1
             ):
                 return 0
-            time_correlation = sp.stats.pearsonr(
+            time_cost_correlation: float = sp.stats.pearsonr(
                 self.__time_dataset, self.__cost_dataset
             )[0]
-            error_correlation = sp.stats.pearsonr(
+            error_cost_correlation: float = sp.stats.pearsonr(
                 self.__error_dataset, self.__cost_dataset
             )[0]
-            return np.abs(time_correlation - error_correlation)
+            time_error_correlation: float = sp.stats.pearsonr(
+                self.__time_dataset, self.__error_dataset
+            )[0]
+            R2 = np.sqrt(
+                (
+                    np.abs(time_cost_correlation ** 2)
+                    + np.abs(error_cost_correlation ** 2)
+                    - 2
+                    * time_cost_correlation
+                    * error_cost_correlation
+                    * time_error_correlation
+                )
+                / (1 - np.abs(time_error_correlation))
+            )
+            R2_adj = 1 - (
+                ((1 - R2 ** 2) * (samples - 1)) / (samples - independent_vars - 1)
+            )
+            return -R2_adj
         except ValueError:
             return 0
 
