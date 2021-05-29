@@ -82,8 +82,8 @@ def approximate(
                     },
                 )
 
-            return controller.compute_objective(
-                point
+            return list(
+                controller.compute_objective(point)
             )  # we expect the first and only argument of the function to be the input point
 
         if kwargs.get("disabled"):

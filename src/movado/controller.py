@@ -22,6 +22,7 @@ class Controller(ABC):
         estimator: Estimator,
         self_exact: Optional[object] = None,
         debug=False,
+        **kwargs
     ):
         self.__scaler = StandardScaler()
         self.__time_dataset: List[float] = []

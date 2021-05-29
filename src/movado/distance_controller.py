@@ -39,6 +39,7 @@ class DistanceController(Controller):
         self.__threshold_kwargs: Dict[str, Union[int, float]] = {
             k: kwargs[k] for k in kwargs.keys() if k.startswith("threshold_")
         }
+        self.__distances: List[float] = []
         if self.__threshold == "fixed" and not self.__threshold_kwargs.get(
             "threshold_value"
         ):
@@ -46,6 +47,8 @@ class DistanceController(Controller):
                 "Missing keyword argument threshold_value, this argument is mandatory"
                 + " when using fixed threshold "
             )
+        self.__mab = None
+        self.__weight_mab = None
         if self.__threshold == "mab":
             if not kwargs.get("mab_actions"):
                 kwargs["mab_actions"] = 100
@@ -55,14 +58,21 @@ class DistanceController(Controller):
                 self.__mab = MabHandlerCATS(
                     debug=debug, epsilon=kwargs.get("mab_epsilon")
                 )
-                self.__weight_mab = MabHandlerCATS(
-                    debug=debug,
-                    epsilon=kwargs.get("mab_epsilon"),
-                    debug_path="mab_weight",
-                )
             else:
                 self.__mab = MabHandlerCATS(debug=debug)
                 self.__weight_mab = MabHandlerCATS(debug=debug, debug_path="mab_weight")
+            if kwargs.get("mab_weight"):
+                if kwargs.get("mab_epsilon"):
+                    self.__weight_mab = MabHandlerCATS(
+                        debug=debug,
+                        epsilon=kwargs.get("mab_epsilon"),
+                        debug_path="mab_weight",
+                    )
+                else:
+                    self.__weight_mab = MabHandlerCATS(
+                        debug=debug, debug_path="mab_weight"
+                    )
+
         if self._debug:
             Path(self._controller_debug).open("a").write(
                 "Threshold, Nth_Nearest_Distance, Point, Exec_Time, Error, Estimation\n"
@@ -81,14 +91,20 @@ class DistanceController(Controller):
                 point,
                 (self.__mab, threshold * 100) if self.__threshold == "mab" else None,
                 1 if self.__threshold == "mab" and error == 0.0 else None,
-                # self.__weight_mab if self.__threshold == "mab" else None,
-                # 1 if self.__threshold == "mab" and error == 0.0 else None,
+                self.__weight_mab
+                if self.__threshold == "mab" and self.__weight_mab
+                else None,
+                1
+                if self.__threshold == "mab" and error == 0.0 and self.__weight_mab
+                else None,
             )
         else:
             out, exec_time = self._compute_estimated(
                 point,
                 (self.__mab, threshold * 100) if self.__threshold == "mab" else None,
-                # self.__weight_mab if self.__threshold == "mab" else None,
+                self.__weight_mab
+                if self.__threshold == "mab" and self.__weight_mab
+                else None,
             )
 
         # TODO probably this check can be done only once
@@ -161,4 +177,10 @@ class DistanceController(Controller):
                 ),
             )
         k = min(self.__nth_nearest, len(self.__evaluated_points))
-        return self.__knn.query([point], k=k)[0][0][k - 1]
+        distance = self.__knn.query([point], k=k)[0][0][k - 1]
+        self.__distances.append(distance)
+        diameter = max(self.__distances) - min(self.__distances)
+        if diameter == 0:
+            return 0
+        else:
+            return (distance - min(self.__distances)) / diameter
