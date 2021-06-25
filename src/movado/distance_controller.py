@@ -6,7 +6,7 @@ from sklearn.neighbors import KDTree, DistanceMetric
 from movado.controller import Controller
 from movado.mab_handler_cats import MabHandlerCATS
 
-
+# TODO make lists global
 class DistanceController(Controller):
     # do not annotate types in __init__, it throws "ABCMeta Object is not subscriptable"
     def __init__(
@@ -14,11 +14,18 @@ class DistanceController(Controller):
         exact_fitness,
         estimator,
         self_exact: Optional[object] = None,
+        problem_dimensionality: int = -1,
+        solutions=None,
         nth_nearest=3,
         distance_metric="minkowski",
         threshold="mab",
         debug=False,
-        **kwargs,
+        skip_debug_initialization=False,
+        mab_epsilon: float = 0.2,
+        mab_bandwidth: int = 1,
+        mab_weight: bool = True,
+        mab_weight_epsilon: float = 0.2,
+        mab_weight_bandwidth: int = 1,
     ):
         super().__init__(
             exact_fitness=exact_fitness,
@@ -33,50 +40,42 @@ class DistanceController(Controller):
         self.__nth_nearest: int = nth_nearest
         self.__are_neighbours_to_recompute: bool = True
         self.__knn: Optional[KDTree] = None
-        self.__distance_metric_kwargs: Dict[str, Union[int, float]] = {
-            k: kwargs[k] for k in kwargs.keys() if k.startswith("distance_")
-        }
-        self.__threshold_kwargs: Dict[str, Union[int, float]] = {
-            k: kwargs[k] for k in kwargs.keys() if k.startswith("threshold_")
-        }
         self.__distances: List[float] = []
-        if self.__threshold == "fixed" and not self.__threshold_kwargs.get(
-            "threshold_value"
-        ):
-            raise Exception(
-                "Missing keyword argument threshold_value, this argument is mandatory"
-                + " when using fixed threshold "
-            )
         self.__mab = None
         self.__weight_mab = None
+        self.__params = (
+            "Model_Parameters",
+            {
+                "nth_nearest": self.__nth_nearest,
+                "mab_epsilon": mab_epsilon,
+                "mab_bandwidth": mab_bandwidth,
+                "mab_weight_epsilon": mab_weight_epsilon,
+                "mab_weight_bandwidth": mab_weight_bandwidth,
+            },
+        )
         if self.__threshold == "mab":
-            if not kwargs.get("mab_actions"):
-                kwargs["mab_actions"] = 100
-            if not kwargs.get("mab_bandwidth"):
-                kwargs["mab_bandwidth"] = 5
-            if kwargs.get("mab_epsilon"):
-                self.__mab = MabHandlerCATS(
-                    debug=debug, epsilon=kwargs.get("mab_epsilon")
-                )
-            else:
-                self.__mab = MabHandlerCATS(debug=debug)
-                self.__weight_mab = MabHandlerCATS(debug=debug, debug_path="mab_weight")
-            if kwargs.get("mab_weight"):
-                if kwargs.get("mab_epsilon"):
-                    self.__weight_mab = MabHandlerCATS(
-                        debug=debug,
-                        epsilon=kwargs.get("mab_epsilon"),
-                        debug_path="mab_weight",
-                    )
-                else:
-                    self.__weight_mab = MabHandlerCATS(
-                        debug=debug, debug_path="mab_weight"
-                    )
-
-        if self._debug:
-            Path(self._controller_debug).open("a").write(
-                "Threshold, Nth_Nearest_Distance, Point, Exec_Time, Error, Estimation\n"
+            self.__mab = MabHandlerCATS(
+                debug=debug,
+                epsilon=mab_epsilon,
+                bandwidth=mab_bandwidth,
+                controller_params={self.__params[0]: self.__params[1]},
             )
+            if mab_weight:
+                self.__weight_mab = MabHandlerCATS(
+                    debug=debug,
+                    epsilon=mab_weight_epsilon,
+                    bandwidth=mab_weight_bandwidth,
+                    debug_path="mab_weight",
+                    controller_params={self.__params[0]: self.__params[1]},
+                )
+
+        if self._debug and not skip_debug_initialization:
+            self.initialize_debug()
+
+    def initialize_debug(self):
+        Path(self._controller_debug).open("a").write(
+            "Model_Parameters, Threshold, Nth_Nearest_Distance, Point, Exec_Time, Error, Estimation\n"
+        )
 
     def compute_objective(self, point: List[int]) -> List[float]:
         out: List[float]
@@ -109,8 +108,9 @@ class DistanceController(Controller):
 
         # TODO probably this check can be done only once
         if self._debug:
-            self._write_debug(
+            self.write_debug(
                 {
+                    self.__params[0]: self.__params[1],
                     "Threshold": 0 if error == 0.0 else threshold,
                     "Nth_Nearest_Distance": 0
                     if not self.__evaluated_points
@@ -125,9 +125,11 @@ class DistanceController(Controller):
             )
         return out
 
-    def _write_debug(self, debug_info: Dict[str, Any]):
+    def write_debug(self, debug_info: Dict[str, Any]):
         Path(self._controller_debug).open("a").write(
-            str(debug_info["Threshold"])
+            str(debug_info["Model_Parameters"])
+            + ", "
+            + str(debug_info["Threshold"])
             + ", "
             + str(debug_info["Nth_Nearest_Distance"])
             + ", "
@@ -150,9 +152,6 @@ class DistanceController(Controller):
             point if self.__threshold == "mab" else None
         )
 
-    def _get_threshold_fixed(self, *args) -> float:
-        return self.__threshold_kwargs["threshold_value"]
-
     def _get_threshold_mean(self, *args):
         return np.mean(self._get_distances())
 
@@ -172,9 +171,7 @@ class DistanceController(Controller):
         if self.__are_neighbours_to_recompute:
             self.__knn = KDTree(
                 self.__evaluated_points,
-                metric=DistanceMetric.get_metric(
-                    self.__distance_metric, **self.__distance_metric_kwargs
-                ),
+                metric=DistanceMetric.get_metric(self.__distance_metric),
             )
         k = min(self.__nth_nearest, len(self.__evaluated_points))
         distance = self.__knn.query([point], k=k)[0][0][k - 1]
@@ -184,3 +181,8 @@ class DistanceController(Controller):
             return 0
         else:
             return (distance - min(self.__distances)) / diameter
+
+    def get_mean_cost(self) -> float:
+        if self.__threshold != "mab":
+            raise Exception("Mean cost is defined only for Controllers employing Mabs")
+        return self.__mab.get_mean_cost()

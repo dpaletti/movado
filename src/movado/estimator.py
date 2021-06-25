@@ -1,7 +1,6 @@
 import abc
 from abc import abstractmethod
 from typing import List
-from pathlib import Path
 
 
 class Estimator(abc.ABC):

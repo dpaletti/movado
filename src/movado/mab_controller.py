@@ -13,7 +13,11 @@ class MabController(Controller):
         exact_fitness: Callable[[List[float]], List[float]],
         estimator: Estimator,
         self_exact: Optional[object] = None,
+        problem_dimensionality: bool = -1,
+        solutions=None,
         debug: bool = False,
+        skip_debug_initialization=False,
+        cover: int = 3,
         epsilon: float = 0.2,
     ):
         super().__init__(
@@ -22,16 +26,22 @@ class MabController(Controller):
             self_exact=self_exact,
             debug=debug,
         )
-        self.__mab = MabHandlerCB(debug, epsilon=epsilon)
+
+        self.__epsilon = epsilon
+        self.__cover = cover
+        self.__mab = MabHandlerCB(arms=2, debug=debug, cover=3)
         self.__weight_mab = MabHandlerCATS(
             debug=debug, epsilon=epsilon, debug_path="mab_weight"
         )
         self.__is_first_call = True
 
-        if self._debug:
-            Path(self._controller_debug).open("a").write(
-                "Point, Exec_Time, Error, Estimation\n"
-            )
+        if self._debug and not skip_debug_initialization:
+            self.initialize_debug()
+
+    def initialize_debug(self):
+        Path(self._controller_debug).open("a").write(
+            "Model_Parameters, Point, Exec_Time, Error, Estimation\n"
+        )
 
     def compute_objective(self, point: List[int]) -> List[float]:
         decision = self.__mab.predict([*point, self._estimator.get_error()])
@@ -51,8 +61,12 @@ class MabController(Controller):
 
         # TODO probably this check can be done only once
         if self._debug:
-            self._write_debug(
+            self.write_debug(
                 {
+                    "Model_Parameters": {
+                        "epsilon": self.__epsilon,
+                        "cover": self.__cover,
+                    },
                     "Point": point,
                     "Exec_Time": exec_time,
                     "Error": self._estimator.get_error(),
@@ -62,9 +76,11 @@ class MabController(Controller):
         self.__is_first_call = False
         return out
 
-    def _write_debug(self, debug_info: Dict[str, Any]):
+    def write_debug(self, debug_info: Dict[str, Any]):
         Path(self._controller_debug).open("a").write(
-            str(debug_info["Point"])
+            str(debug_info["Model_Parameters"])
+            + ", "
+            + str(debug_info["Point"])
             + ", "
             + str(debug_info["Exec_Time"])
             + ", "

@@ -5,23 +5,23 @@ from scipy.stats import PearsonRConstantInputWarning
 from sklearn.preprocessing import StandardScaler
 import numpy as np
 import scipy as sp
-import scipy.stats
 import time
 from pathlib import Path
 
 from movado.estimator import Estimator
 from movado.mab_handler import MabHandler
-import warnings
 
 
 class Controller(ABC):
     @abstractmethod
     def __init__(
         self,
-        exact_fitness: Callable[[List[float]], List[float]],
-        estimator: Estimator,
+        exact_fitness: Callable[[List[float]], List[float]] = None,
+        estimator: Estimator = None,
         self_exact: Optional[object] = None,
-        debug=False,
+        problem_dimensionality: int = -1,
+        solutions=None,
+        debug: bool = False,
         **kwargs
     ):
         self.__scaler = StandardScaler()
@@ -127,7 +127,11 @@ class Controller(ABC):
         return estimation, exec_time
 
     @abstractmethod
-    def _write_debug(self, debug_info: Dict[str, Any]):
+    def initialize_debug(self):
+        pass
+
+    @abstractmethod
+    def write_debug(self, debug_info: Dict[str, Any]):
         pass
 
     def get_time_error_z_score(
@@ -189,6 +193,8 @@ class Controller(ABC):
                 )
                 / (1 - np.abs(time_error_correlation))
             )
+            if R2 == np.nan:
+                return 0
             R2_adj = 1 - (
                 ((1 - R2 ** 2) * (samples - 1)) / (samples - independent_vars - 1)
             )

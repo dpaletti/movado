@@ -8,17 +8,20 @@ from movado.mab_handler import MabHandler
 class MabHandlerCATS(MabHandler):
     def __init__(
         self,
-        mab_bandwidth: int = 1,
+        bandwidth: int = 1,
         epsilon: float = 0.2,
         debug=False,
+        controller_params: dict = None,
         debug_path: str = "mab",
     ):
-        super(MabHandlerCATS, self).__init__(debug, debug_path)
+        super(MabHandlerCATS, self).__init__(
+            debug, debug_path, controller_params=controller_params
+        )
         self._sample_prefix = "ca "
-        if mab_bandwidth < 0:
+        if bandwidth < 0:
             raise Exception(
                 "Invalid bandwidth value: "
-                + str(mab_bandwidth)
+                + str(bandwidth)
                 + " it must be greater or equal than 1"
             )
         if epsilon < 0 or epsilon > 1:
@@ -30,8 +33,9 @@ class MabHandlerCATS(MabHandler):
             "--cats "
             + str(mab_actions)
             + "  --bandwidth "
-            + str(mab_bandwidth)
+            + str(bandwidth)
             + " --min_value 0 --max_value 100 --chain_hash --coin --epsilon 0.2 -q ::"
+            + " --quiet"
         )
 
     def predict(self, context: List[float]) -> float:

@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from typing import List, Callable
 
 from movado.controller import Controller
@@ -6,10 +7,6 @@ from functools import wraps
 from movado.distance_controller import DistanceController
 from movado.hoeffding_adaptive_tree_model import HoeffdingAdaptiveTreeModel
 from movado.chained_estimator import ChainedEstimator
-
-# This imports are unused but populate the global symbol table for the globals() call
-from movado.mab_controller import MabController
-from movado.kernel_regression_model import KernelRegressionModel
 
 
 def approximate(
@@ -71,10 +68,12 @@ def approximate(
                     if not selected_controller
                     else selected_controller
                 )
+
                 controller = controller(
                     func,
                     estimator,
                     self_exact=None if len(wrapper_args) == 1 else wrapper_args[0],
+                    problem_dimensionality=outputs,
                     **{
                         k[k.find("_") + 1 :]: v
                         for k, v in kwargs.items()
@@ -91,17 +90,3 @@ def approximate(
         return wrapper
 
     return approximate_decorator
-
-
-class Movado:
-    def __init__(self):
-        self.models = [
-            model.replace("Model", "")
-            for model in globals().keys()
-            if ("Model" in model) and len(model) > 5
-        ]
-        self.controllers = [
-            controller.replace("Controller", "")
-            for controller in globals().keys()
-            if ("Controller" in controller) and len(controller) > 10
-        ]

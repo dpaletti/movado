@@ -5,16 +5,32 @@ import numpy as np
 
 
 class MabHandler(ABC):
-    def __init__(self, debug: bool = False, debug_path: str = "mab"):
+    def __init__(
+        self,
+        debug: bool = False,
+        debug_path: str = "mab",
+        skip_debug_initialization: bool = False,
+        controller_params=None,
+    ):
         self._mab = None
         self._last_predict_probability: float = -1
         self._debug = debug
-        self._sample_prefix = ""  # if changing this add trailing whitespace
+        self._sample_prefix = ""
         self.__costs: List[float] = []
-        if debug:
-            Path("movado_debug").mkdir(exist_ok=True)
-            self.__mab_debug = "movado_debug/" + debug_path + ".csv"
-            Path(self.__mab_debug).open("w").close()
+        self.__controller_params = controller_params
+        self.__mab_debug = ""
+        if debug and not skip_debug_initialization:
+            self.initialize_debug(debug_path)
+
+    def initialize_debug(self, debug_path):
+        Path("movado_debug").mkdir(exist_ok=True)
+        self.__mab_debug = "movado_debug/" + debug_path + ".csv"
+        Path(self.__mab_debug).open("w").close()
+        if self.__controller_params:
+            Path(self.__mab_debug).open("a").write(
+                "Model_Parameters, Mean Cost, Action, Context, Probability\n"
+            )
+        else:
             Path(self.__mab_debug).open("a").write(
                 "Mean Cost, Action, Context, Probability\n"
             )
@@ -48,14 +64,24 @@ class MabHandler(ABC):
         self._mab.learn(sample)
         if self._debug:
             self.__costs.append(cost)
+            optional_params = (
+                (str(self.__controller_params) + ", ")
+                if self.__controller_params
+                else ""
+            )
             Path(self.__mab_debug).open("a").write(
-                str(np.mean(self.__costs))
+                optional_params
+                + str(np.mean(self.__costs))
                 + ", "
                 + str(action)
                 + ", "
                 + str(context)
                 + ", "
-                + str(self._last_predict_probability)
+                + (
+                    str(self._last_predict_probability)
+                    if not forced_predict_probability
+                    else str(self._last_predict_probability)
+                )
                 + "\n"
             )
 
@@ -64,3 +90,9 @@ class MabHandler(ABC):
             return float(np.mean(self.__costs))
         else:
             return 0
+
+    def get_last_predict_probability(self) -> float:
+        return self._last_predict_probability
+
+    def set_last_predict_probability(self, last_predict_probability: float) -> None:
+        self._last_predict_probability = last_predict_probability
