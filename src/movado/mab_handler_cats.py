@@ -13,9 +13,13 @@ class MabHandlerCATS(MabHandler):
         debug=False,
         controller_params: dict = None,
         debug_path: str = "mab",
+        skip_debug_initialization: bool = False,
     ):
         super(MabHandlerCATS, self).__init__(
-            debug, debug_path, controller_params=controller_params
+            debug,
+            debug_path,
+            controller_params=controller_params,
+            skip_debug_initialization=skip_debug_initialization,
         )
         self._sample_prefix = "ca "
         if bandwidth < 0:
@@ -34,8 +38,7 @@ class MabHandlerCATS(MabHandler):
             + str(mab_actions)
             + "  --bandwidth "
             + str(bandwidth)
-            + " --min_value 0 --max_value 100 --chain_hash --coin --epsilon 0.2 -q ::"
-            + " --quiet"
+            + " --min_value 0 --max_value 100 --chain_hash --coin --epsilon 0.2 --quiet"
         )
 
     def predict(self, context: List[float]) -> float:

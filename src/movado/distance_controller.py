@@ -4,9 +4,13 @@ import numpy as np
 from sklearn.neighbors import KDTree, DistanceMetric
 
 from movado.controller import Controller
+from movado.mab_handler import MabHandler
 from movado.mab_handler_cats import MabHandlerCATS
 
 # TODO make lists global
+from movado.mab_handler_cb import MabHandlerCB
+
+
 class DistanceController(Controller):
     # do not annotate types in __init__, it throws "ABCMeta Object is not subscriptable"
     def __init__(
@@ -14,8 +18,6 @@ class DistanceController(Controller):
         exact_fitness,
         estimator,
         self_exact: Optional[object] = None,
-        problem_dimensionality: int = -1,
-        solutions=None,
         nth_nearest=3,
         distance_metric="minkowski",
         threshold="mab",
@@ -59,6 +61,7 @@ class DistanceController(Controller):
                 epsilon=mab_epsilon,
                 bandwidth=mab_bandwidth,
                 controller_params={self.__params[0]: self.__params[1]},
+                skip_debug_initialization=skip_debug_initialization,
             )
             if mab_weight:
                 self.__weight_mab = MabHandlerCATS(
@@ -67,6 +70,7 @@ class DistanceController(Controller):
                     bandwidth=mab_weight_bandwidth,
                     debug_path="mab_weight",
                     controller_params={self.__params[0]: self.__params[1]},
+                    skip_debug_initialization=skip_debug_initialization,
                 )
 
         if self._debug and not skip_debug_initialization:
@@ -77,7 +81,9 @@ class DistanceController(Controller):
             "Model_Parameters, Threshold, Nth_Nearest_Distance, Point, Exec_Time, Error, Estimation\n"
         )
 
-    def compute_objective(self, point: List[int]) -> List[float]:
+    def compute_objective(
+        self, point: List[int], decision_only: bool = False
+    ) -> Union[List[float], int]:
         out: List[float]
         mae: float
         self.__add_point(point)
@@ -86,24 +92,36 @@ class DistanceController(Controller):
         error = self._estimator.get_error()
 
         if nth_distance > threshold or error == 0.0:
+            if decision_only:
+                return 1
             out, exec_time = self._compute_exact(
                 point,
-                (self.__mab, threshold * 100) if self.__threshold == "mab" else None,
-                1 if self.__threshold == "mab" and error == 0.0 else None,
-                self.__weight_mab
+                mab=(self.__mab, threshold * 100)
+                if self.__threshold == "mab"
+                else None,
+                mab_forced_probability=1
+                if self.__threshold == "mab" and error == 0.0
+                else None,
+                mab_weight=self.__weight_mab
                 if self.__threshold == "mab" and self.__weight_mab
                 else None,
-                1
+                mab_weight_forced_probability=1
                 if self.__threshold == "mab" and error == 0.0 and self.__weight_mab
                 else None,
+                is_point_in_context=False,
             )
         else:
+            if decision_only:
+                return 0
             out, exec_time = self._compute_estimated(
                 point,
-                (self.__mab, threshold * 100) if self.__threshold == "mab" else None,
-                self.__weight_mab
+                mab=(self.__mab, threshold * 100)
+                if self.__threshold == "mab"
+                else None,
+                mab_weight=self.__weight_mab
                 if self.__threshold == "mab" and self.__weight_mab
                 else None,
+                is_point_in_context=False,
             )
 
         # TODO probably this check can be done only once
@@ -148,18 +166,16 @@ class DistanceController(Controller):
         self.__are_neighbours_to_recompute = True
 
     def __get_threshold(self, point: List[int]) -> float:
-        return getattr(self, "_get_threshold_" + self.__threshold)(
-            point if self.__threshold == "mab" else None
-        )
+        return getattr(self, "_get_threshold_" + self.__threshold)(point)
 
-    def _get_threshold_mean(self, *args):
+    def _get_threshold_mean(self, point):
         return np.mean(self._get_distances())
 
-    def _get_threshold_median(self, *args):
+    def _get_threshold_median(self, point):
         return np.median(self._get_distances())
 
-    def _get_threshold_mab(self, point: List[int]) -> float:
-        return self.__mab.predict(point) / 100
+    def _get_threshold_mab(self, point) -> float:
+        return self.__mab.predict(self._compute_controller_context(point)) / 100
 
     def _get_distances(self) -> np.ndarray:
         distances: np.ndarray = np.empty([0])
@@ -186,3 +202,16 @@ class DistanceController(Controller):
         if self.__threshold != "mab":
             raise Exception("Mean cost is defined only for Controllers employing Mabs")
         return self.__mab.get_mean_cost()
+
+    def get_mab(self) -> Optional[MabHandlerCATS]:
+        if not self.__mab:
+            return None
+        return self.__mab
+
+    def get_weight_mab(self) -> Optional[MabHandlerCATS]:
+        if not self.__weight_mab:
+            return None
+        return self.__weight_mab
+
+    def get_parameters(self):
+        return self.__params

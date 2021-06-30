@@ -18,13 +18,12 @@ class MabHandler(ABC):
         self._sample_prefix = ""
         self.__costs: List[float] = []
         self.__controller_params = controller_params
-        self.__mab_debug = ""
-        if debug and not skip_debug_initialization:
-            self.initialize_debug(debug_path)
-
-    def initialize_debug(self, debug_path):
-        Path("movado_debug").mkdir(exist_ok=True)
         self.__mab_debug = "movado_debug/" + debug_path + ".csv"
+        if debug and not skip_debug_initialization:
+            self.initialize_debug()
+
+    def initialize_debug(self):
+        Path("movado_debug").mkdir(exist_ok=True)
         Path(self.__mab_debug).open("w").close()
         if self.__controller_params:
             Path(self.__mab_debug).open("a").write(

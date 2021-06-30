@@ -1,5 +1,6 @@
 from abc import abstractmethod, ABC
 from typing import Tuple, Optional, Callable, Any, List, Dict, Union
+from itertools import compress
 
 from scipy.stats import PearsonRConstantInputWarning
 from sklearn.preprocessing import StandardScaler
@@ -19,8 +20,6 @@ class Controller(ABC):
         exact_fitness: Callable[[List[float]], List[float]] = None,
         estimator: Estimator = None,
         self_exact: Optional[object] = None,
-        problem_dimensionality: int = -1,
-        solutions=None,
         debug: bool = False,
         **kwargs
     ):
@@ -39,40 +38,41 @@ class Controller(ABC):
             Path(self._controller_debug).open("w").close()
 
     @abstractmethod
-    def compute_objective(self, point: List[int]) -> List[float]:
+    def compute_objective(
+        self, point: List[int], decision_only: bool = False
+    ) -> List[float]:
         pass
 
-    def _compute_exact(
+    def learn(
         self,
-        point: List[int],
+        point: List[float],
+        exec_time: float = None,
         mab: Optional[Tuple[MabHandler, Union[int, float]]] = None,
         mab_forced_probability: Optional[int] = None,
         mab_weight: Optional[MabHandler] = None,
         mab_weight_forced_probability: Optional[int] = None,
-    ) -> Tuple[List[float], float]:
-        if self._self_exact:
-            exact, exec_time = Controller.measure_execution_time(
-                self._exact, self._self_exact, point
-            )
-        else:
-            exact, exec_time = Controller.measure_execution_time(self._exact, point)
-
-        self._estimator.train(point, exact)
+        is_point_in_context: bool = True,
+    ):
         if mab:
             if mab_weight:
-                time_weight = mab_weight.predict([mab[0].get_mean_cost()]) / 100
+                time_weight = (
+                    mab_weight.predict(
+                        self._compute_weighting_context(self.get_mab().get_mean_cost())
+                    )
+                    / 100
+                )
                 mab[0].learn(
                     mab[1],
                     self.get_time_error_z_score(
                         exec_time, 0, *(time_weight, 1 - time_weight)
                     ),
-                    point,
+                    self._compute_controller_context(point),
                     mab_forced_probability,
                 ),
                 mab_weight.learn(
                     time_weight * 100,
                     self.get_time_error_correlation(),
-                    [mab[0].get_mean_cost()],
+                    self._compute_weighting_context(self.get_mab().get_mean_cost()),
                     mab_weight_forced_probability,
                 )
             else:
@@ -82,47 +82,95 @@ class Controller(ABC):
                         exec_time,
                         0,
                     ),
-                    point,
+                    self._compute_controller_context(point),
                     mab_forced_probability,
                 )
+
+    def _compute_exact(
+        self,
+        point: List[int],
+        mab: Optional[Tuple[MabHandler, Union[int, float]]] = None,
+        mab_forced_probability: Optional[int] = None,
+        mab_weight: Optional[MabHandler] = None,
+        mab_weight_forced_probability: Optional[int] = None,
+        is_point_in_context: bool = True,
+    ) -> Tuple[List[float], float]:
+
+        if self._self_exact:
+            exact, exec_time = Controller.measure_execution_time(
+                self._exact, self._self_exact, point
+            )
+        else:
+            exact, exec_time = Controller.measure_execution_time(self._exact, point)
+
+        self.learn(
+            point,
+            exec_time,
+            mab,
+            mab_forced_probability,
+            mab_weight,
+            mab_weight_forced_probability,
+            is_point_in_context,
+        )
+
+        self._estimator.train(point, exact)
         return exact, exec_time
+
+    @staticmethod
+    def __extract_time_context_features(series: List[float]):
+        return (
+            (np.mean(series), np.var(series), max(series), min(series), series[-1])
+            if len(series) > 0
+            else (0, 0, 0, 0, 0)
+        )
+
+    @staticmethod
+    def _compute_controller_context(point: List[float]):
+        return point
+
+    # def _compute_controller_context(self, point: List[int] = None) -> List[float]:
+    #     exact_execution_times: List[float] = list(
+    #         compress(self.__time_dataset, self.__is_call_exact)
+    #     )
+    #     estimated_execution_times: List[float] = [
+    #         x for x in self.__time_dataset if x not in exact_execution_times
+    #     ]
+    #     context = [
+    #         self._estimator.get_error(),
+    #         *self.__extract_time_context_features(exact_execution_times),
+    #         *self.__extract_time_context_features(estimated_execution_times),
+    #     ]
+    #     if not point:
+    #         return context
+    #     else:
+    #         return context + point
+
+    @staticmethod
+    def _compute_weighting_context(mab_loss: float) -> List[float]:
+        return [mab_loss]
 
     def _compute_estimated(
         self,
         point: List[int],
         mab: Optional[Tuple[MabHandler, Union[int, float]]] = None,
         mab_weight: MabHandler = None,
+        is_point_in_context: bool = True,
     ) -> Tuple[List[float], float]:
+
         estimation, exec_time = Controller.measure_execution_time(
             self._estimator.predict,
             point,
         )
-        if mab:
-            if mab_weight:
-                time_weight = mab_weight.predict([mab[0].get_mean_cost()]) / 100
-                mab[0].learn(
-                    mab[1],
-                    self.get_time_error_z_score(
-                        exec_time,
-                        self._estimator.get_error(),
-                        *(time_weight, 1 - time_weight)
-                    ),
-                    point,
-                )
-                mab_weight.learn(
-                    time_weight,
-                    self.get_time_error_correlation(),
-                    [mab[0].get_mean_cost()],
-                )
-            else:
-                mab[0].learn(
-                    mab[1],
-                    self.get_time_error_z_score(
-                        exec_time,
-                        self._estimator.get_error(),
-                    ),
-                    point,
-                )
+
+        self.learn(
+            point,
+            exec_time,
+            mab,
+            None,
+            mab_weight,
+            None,
+            is_point_in_context,
+        )
 
         return estimation, exec_time
 
@@ -210,3 +258,15 @@ class Controller(ABC):
         out = func(*args, **kwargs)
         execution_time = time.time() - start
         return out, execution_time
+
+    @abstractmethod
+    def get_mab(self) -> MabHandler:
+        pass
+
+    @abstractmethod
+    def get_weight_mab(self) -> MabHandler:
+        pass
+
+    @abstractmethod
+    def get_parameters(self):
+        pass

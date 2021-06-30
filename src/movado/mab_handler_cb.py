@@ -2,7 +2,6 @@ from typing import List, Tuple
 
 from vowpalwabbit import pyvw
 from movado.mab_handler import MabHandler
-import numpy as np
 import random
 
 
@@ -14,11 +13,17 @@ class MabHandlerCB(MabHandler):
         cover: float = 3,
         controller_params: dict = None,
         debug_path: str = "mab",
+        skip_debug_initialization: bool = False,
     ):
         super().__init__(
-            debug, controller_params=controller_params, debug_path=debug_path
+            debug,
+            controller_params=controller_params,
+            debug_path=debug_path,
+            skip_debug_initialization=skip_debug_initialization,
         )
-        self._mab = pyvw.vw("--cb_explore " + str(arms) + " --cover " + str(cover))
+        self._mab = pyvw.vw(
+            "--cb_explore " + str(arms) + " --cover " + str(cover) + " --quiet"
+        )
 
     def predict(self, context: List[float]) -> int:
         context_str: str = "| "

@@ -7,6 +7,20 @@ from functools import wraps
 from movado.distance_controller import DistanceController
 from movado.hoeffding_adaptive_tree_model import HoeffdingAdaptiveTreeModel
 from movado.chained_estimator import ChainedEstimator
+import movado.movado_static
+
+
+# This imports are unused but populate the global symbol table for the globals() call
+# noinspection PyUnresolvedReferences
+from movado.mab_controller import MabController  # pylint: disable=unused-import
+
+# noinspection PyUnresolvedReferences
+from movado.voting_controller import VotingController  # pylint: disable=unused-import
+
+# noinspection PyUnresolvedReferences
+from movado.kernel_regression_model import (
+    KernelRegressionModel,
+)  # pylint: disable=unused-import
 
 
 def approximate(
@@ -68,12 +82,31 @@ def approximate(
                     if not selected_controller
                     else selected_controller
                 )
-
-                controller = controller(
-                    func,
+                if selected_controller is MabController:
+                    params = OrderedDict(
+                        {
+                            "cover": [3, 5, 7, 11, 20],
+                            "mab_weight_epsilon": [0.1, 0.2, 0.3, 0.4],
+                            "mab_weight_bandwidth": [1, 5, 10, 20, 50, 75],
+                        }
+                    )
+                else:
+                    # All other cases are handled as a DistanceController
+                    params = OrderedDict(
+                        {
+                            "nth_nearest": [1, 3, 5, 7],
+                            "mab_epsilon": [0.1, 0.2, 0.3],
+                            "mab_bandwidth": [1, 5, 10, 20],
+                            "mab_weight_epsilon": [0.1, 0.2, 0.3],
+                            "mab_weight_bandwidth": [1, 5, 10, 20],
+                        }
+                    )
+                controller = VotingController(
+                    controller,
                     estimator,
+                    func,
+                    params,
                     self_exact=None if len(wrapper_args) == 1 else wrapper_args[0],
-                    problem_dimensionality=outputs,
                     **{
                         k[k.find("_") + 1 :]: v
                         for k, v in kwargs.items()
