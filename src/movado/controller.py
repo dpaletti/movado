@@ -45,12 +45,15 @@ class Controller(ABC):
 
     def learn(
         self,
+        is_exact: bool,
         point: List[float],
         exec_time: float = None,
         mab: Optional[Tuple[MabHandler, Union[int, float]]] = None,
-        mab_forced_probability: Optional[int] = None,
+        mab_forced_probability: Optional[float] = None,
+        mab_forced_action: Optional[Union[int, float]] = None,
         mab_weight: Optional[MabHandler] = None,
-        mab_weight_forced_probability: Optional[int] = None,
+        mab_weight_forced_probability: Optional[float] = None,
+        mab_weight_forced_action: Optional[Union[int, float]] = None,
         is_point_in_context: bool = True,
     ):
         if mab:
@@ -62,25 +65,24 @@ class Controller(ABC):
                     / 100
                 )
                 mab[0].learn(
-                    mab[1],
                     self.get_time_error_z_score(
-                        exec_time, 0, *(time_weight, 1 - time_weight)
+                        exec_time,
+                        0 if is_exact else self._estimator.get_error(),
+                        *(time_weight, 1 - time_weight)
                     ),
                     self._compute_controller_context(point),
                     mab_forced_probability,
                 ),
                 mab_weight.learn(
-                    time_weight * 100,
                     self.get_time_error_correlation(),
                     self._compute_weighting_context(self.get_mab().get_mean_cost()),
                     mab_weight_forced_probability,
                 )
             else:
                 mab[0].learn(
-                    mab[1],
                     self.get_time_error_z_score(
                         exec_time,
-                        0,
+                        0 if is_exact else self._estimator.get_error(),
                     ),
                     self._compute_controller_context(point),
                     mab_forced_probability,
@@ -104,13 +106,14 @@ class Controller(ABC):
             exact, exec_time = Controller.measure_execution_time(self._exact, point)
 
         self.learn(
-            point,
-            exec_time,
-            mab,
-            mab_forced_probability,
-            mab_weight,
-            mab_weight_forced_probability,
-            is_point_in_context,
+            is_exact=True,
+            point=point,
+            exec_time=exec_time,
+            mab=mab,
+            mab_forced_probability=mab_forced_probability,
+            mab_weight=mab_weight,
+            mab_weight_forced_probability=mab_weight_forced_probability,
+            is_point_in_context=is_point_in_context,
         )
 
         self._estimator.train(point, exact)
@@ -163,13 +166,14 @@ class Controller(ABC):
         )
 
         self.learn(
-            point,
-            exec_time,
-            mab,
-            None,
-            mab_weight,
-            None,
-            is_point_in_context,
+            is_exact=False,
+            point=point,
+            exec_time=exec_time,
+            mab=mab,
+            mab_forced_probability=None,
+            mab_weight=mab_weight,
+            mab_weight_forced_probability=None,
+            is_point_in_context=is_point_in_context,
         )
 
         return estimation, exec_time

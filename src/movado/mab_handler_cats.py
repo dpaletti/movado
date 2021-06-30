@@ -38,7 +38,9 @@ class MabHandlerCATS(MabHandler):
             + str(mab_actions)
             + "  --bandwidth "
             + str(bandwidth)
-            + " --min_value 0 --max_value 100 --chain_hash --coin --epsilon 0.2 --quiet"
+            + " --min_value 0 --max_value 100 --chain_hash --coin --epsilon "
+            + str(epsilon)
+            + " --quiet"
         )
 
     def predict(self, context: List[float]) -> float:
@@ -47,5 +49,6 @@ class MabHandlerCATS(MabHandler):
             context_str += str(feature) + " "
         context_str.strip()
         action: Tuple[float, float] = self._mab.predict(context_str)
+        self._last_action = action[0]
         self._last_predict_probability = action[1]
         return action[0]

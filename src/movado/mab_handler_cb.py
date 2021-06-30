@@ -34,6 +34,7 @@ class MabHandlerCB(MabHandler):
             self._mab.predict(context_str)
         )
         self._last_predict_probability = prediction[1]
+        self._last_action = prediction[0]
         return prediction[0] + 1
 
     @staticmethod

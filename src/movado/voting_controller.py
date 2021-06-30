@@ -27,6 +27,7 @@ class VotingController(Controller):
         params: "OrderedDict[str, List[Union[int, float, str]]]",
         self_exact: Optional[object] = None,
         is_point_in_context: bool = False,
+        mab_weight: bool = True,
         debug=False,
     ):
 
@@ -44,6 +45,7 @@ class VotingController(Controller):
             estimator,
             exact_fitness,
             self_exact=self_exact,
+            mab_weight=mab_weight,
             debug=debug,
         )
         self.__last_winners: List[Controller] = []
@@ -58,20 +60,24 @@ class VotingController(Controller):
 
     def learn(
         self,
+        is_exact: bool,
         point: List[float] = None,
         exec_time: float = None,
         mab: Optional[Tuple[MabHandler, Union[int, float]]] = None,
-        mab_forced_probability: Optional[int] = None,
+        mab_forced_probability: Optional[float] = None,
+        mab_forced_action: Optional[Union[int, float]] = None,
         mab_weight: Optional[MabHandler] = None,
-        mab_weight_forced_probability: Optional[int] = None,
+        mab_weight_forced_probability: Optional[float] = None,
+        mab_weight_forced_action: Optional[Union[int, float]] = None,
         is_point_in_context: bool = True,
     ):
         for controller in self.__controllers:
             if controller in self.__last_winners:
                 controller.learn(
-                    point,
-                    exec_time,
-                    (controller.get_mab(), self.__last_decision),
+                    is_exact=is_exact,
+                    point=point,
+                    exec_time=exec_time,
+                    mab=(controller.get_mab(), self.__last_decision),
                     mab_forced_probability=None,
                     mab_weight=controller.get_weight_mab(),
                     mab_weight_forced_probability=None,
@@ -79,10 +85,19 @@ class VotingController(Controller):
                 )
             else:
                 controller.learn(
-                    point,
-                    exec_time,
-                    (controller.get_mab(), self.__last_decision),
-                    1,
+                    is_exact=is_exact,
+                    point=point,
+                    exec_time=exec_time,
+                    mab=(controller.get_mab(), self.__last_decision),
+                    mab_forced_probability=1,
+                    mab_forced_action=float(
+                        np.mean(
+                            [
+                                winner.get_mab().get_last_action()
+                                for winner in self.__last_winners
+                            ]
+                        )
+                    ),
                     mab_weight=controller.get_weight_mab(),
                     mab_weight_forced_probability=None,
                     is_point_in_context=is_point_in_context,
@@ -95,6 +110,7 @@ class VotingController(Controller):
         estimator: Estimator,
         exact_fitness: Callable[[List[float]], List[float]],
         self_exact: Optional[object],
+        mab_weight: bool,
         debug: bool,
     ) -> List[Controller]:
         controllers: List[Controller] = []
@@ -110,6 +126,7 @@ class VotingController(Controller):
                     self_exact=self_exact,
                     debug=debug,
                     skip_debug_initialization=True,
+                    mab_weight=mab_weight,
                     **current_params
                 )
             )

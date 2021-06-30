@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 from pathlib import Path
 from abc import ABC, abstractmethod
 import numpy as np
@@ -14,6 +14,7 @@ class MabHandler(ABC):
     ):
         self._mab = None
         self._last_predict_probability: float = -1
+        self._last_action: Union[int, float] = -1
         self._debug = debug
         self._sample_prefix = ""
         self.__costs: List[float] = []
@@ -40,14 +41,14 @@ class MabHandler(ABC):
 
     def learn(
         self,
-        action: float,
         cost: float,
         context: List[float],
         forced_predict_probability: int = None,
+        forced_action: Union[int, float] = None,
     ) -> None:
         sample: str = (
             self._sample_prefix
-            + str(action)
+            + (str(self._last_action) if not forced_action else str(forced_action))
             + ":"
             + str(cost)
             + ":"
@@ -72,7 +73,7 @@ class MabHandler(ABC):
                 optional_params
                 + str(np.mean(self.__costs))
                 + ", "
-                + str(action)
+                + (str(self._last_action) if not forced_action else str(forced_action))
                 + ", "
                 + str(context)
                 + ", "
@@ -95,3 +96,6 @@ class MabHandler(ABC):
 
     def set_last_predict_probability(self, last_predict_probability: float) -> None:
         self._last_predict_probability = last_predict_probability
+
+    def get_last_action(self) -> Union[int, float]:
+        return self._last_action
