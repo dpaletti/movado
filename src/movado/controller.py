@@ -65,27 +65,32 @@ class Controller(ABC):
                     / 100
                 )
                 mab[0].learn(
-                    self.get_time_error_z_score(
+                    cost=self.get_time_error_z_score(
                         exec_time,
                         0 if is_exact else self._estimator.get_error(),
                         *(time_weight, 1 - time_weight)
                     ),
-                    self._compute_controller_context(point),
-                    mab_forced_probability,
+                    context=self._compute_controller_context(point),
+                    forced_predict_probability=mab_forced_probability,
+                    forced_action=mab_forced_action,
                 ),
                 mab_weight.learn(
-                    self.get_time_error_correlation(),
-                    self._compute_weighting_context(self.get_mab().get_mean_cost()),
-                    mab_weight_forced_probability,
+                    cost=self.get_time_error_correlation(),
+                    context=self._compute_weighting_context(
+                        self.get_mab().get_mean_cost()
+                    ),
+                    forced_predict_probability=mab_weight_forced_probability,
+                    forced_action=mab_weight_forced_action,
                 )
             else:
                 mab[0].learn(
-                    self.get_time_error_z_score(
+                    cost=self.get_time_error_z_score(
                         exec_time,
                         0 if is_exact else self._estimator.get_error(),
                     ),
-                    self._compute_controller_context(point),
-                    mab_forced_probability,
+                    context=self._compute_controller_context(point),
+                    forced_predict_probability=mab_forced_probability,
+                    forced_action=mab_forced_action,
                 )
 
     def _compute_exact(

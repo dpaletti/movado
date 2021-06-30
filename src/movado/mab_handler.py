@@ -54,7 +54,7 @@ class MabHandler(ABC):
             + ":"
             + (
                 str(self._last_predict_probability)
-                if not forced_predict_probability
+                if forced_predict_probability is None
                 else str(forced_predict_probability)
             )
             + " | "
@@ -73,14 +73,18 @@ class MabHandler(ABC):
                 optional_params
                 + str(np.mean(self.__costs))
                 + ", "
-                + (str(self._last_action) if not forced_action else str(forced_action))
+                + (
+                    str(self._last_action)
+                    if forced_action is None
+                    else str(forced_action)
+                )
                 + ", "
                 + str(context)
                 + ", "
                 + (
                     str(self._last_predict_probability)
-                    if not forced_predict_probability
-                    else str(self._last_predict_probability)
+                    if forced_predict_probability is None
+                    else str(forced_predict_probability)
                 )
                 + "\n"
             )

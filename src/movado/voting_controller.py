@@ -100,6 +100,7 @@ class VotingController(Controller):
                     ),
                     mab_weight=controller.get_weight_mab(),
                     mab_weight_forced_probability=None,
+                    mab_weight_forced_action=None,
                     is_point_in_context=is_point_in_context,
                 )
 
