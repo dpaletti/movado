@@ -39,11 +39,11 @@ class MabHandlerCB(MabHandler):
         self._last_action = prediction[0]
         if probability:
             return (
-                (prediction[0] + 1, self._last_predict_probability)
+                (prediction[0], self._last_predict_probability)
                 if self._last_action == 0
-                else (prediction[0] + 1, 1 - self._last_predict_probability)
+                else (prediction[0], 1 - self._last_predict_probability)
             )
-        return prediction[0] + 1
+        return prediction[0]
 
     @staticmethod
     def sample_probability_mass_function(

@@ -15,7 +15,6 @@ class MabController(Controller):
         self_exact: Optional[object] = None,
         debug: bool = False,
         skip_debug_initialization=False,
-        steps: int = 1,
         cover: int = 3,
         mab_weight: bool = True,
         mab_weight_epsilon: float = 0.2,
@@ -38,7 +37,7 @@ class MabController(Controller):
 
         self.__cover = cover
         self.__mab = MabHandlerCB(
-            arms=2 ** steps,
+            arms=2,
             debug=debug,
             cover=cover,
             controller_params={self.__params[0]: self.__params[1]},
@@ -73,22 +72,20 @@ class MabController(Controller):
         )
         accuracy = self._estimator.get_error()
         if probability:
-            return (
-                (decision[0] - 1, decision[1]) if accuracy != 0.0 else (1, decision[1])
-            )
+            return (decision[0], decision[1]) if accuracy != 0.0 else (1, decision[1])
         if decision_only:
-            return decision - 1
-        if decision == 2 or accuracy == 0.0:
+            return decision
+        if decision == 1 or accuracy == 0.0:
             out, exec_time = self._compute_exact(
                 point,
-                (self.__mab, 2),
+                (self.__mab, 1),
                 1 if accuracy == 0.0 else None,
                 self.__weight_mab,
                 1 if accuracy == 0.0 else None,
             )
         else:
             out, exec_time = self._compute_estimated(
-                point, (self.__mab, 1), self.__weight_mab
+                point, (self.__mab, 0), self.__weight_mab
             )
 
         # TODO probably this check can be done only once
