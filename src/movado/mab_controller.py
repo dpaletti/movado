@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Callable, Dict, Any, Optional, Union
+from typing import List, Callable, Dict, Any, Optional, Union, Tuple
 
 from movado.controller import Controller
 from movado.estimator import Estimator
@@ -15,6 +15,7 @@ class MabController(Controller):
         self_exact: Optional[object] = None,
         debug: bool = False,
         skip_debug_initialization=False,
+        steps: int = 1,
         cover: int = 3,
         mab_weight: bool = True,
         mab_weight_epsilon: float = 0.2,
@@ -37,9 +38,9 @@ class MabController(Controller):
 
         self.__cover = cover
         self.__mab = MabHandlerCB(
-            arms=2,
+            arms=2 ** steps,
             debug=debug,
-            cover=3,
+            cover=cover,
             controller_params={self.__params[0]: self.__params[1]},
         )
         self.__weight_mab = None
@@ -62,10 +63,19 @@ class MabController(Controller):
         )
 
     def compute_objective(
-        self, point: List[int], decision_only: bool = False
-    ) -> Union[List[float], int]:
-        decision = self.__mab.predict(self._compute_controller_context(point))
+        self,
+        point: List[int],
+        decision_only: bool = False,
+        probability=False,
+    ) -> Union[List[float], int, Tuple[int, float]]:
+        decision = self.__mab.predict(
+            self._compute_controller_context(point), probability=probability
+        )
         accuracy = self._estimator.get_error()
+        if probability:
+            return (
+                (decision[0] - 1, decision[1]) if accuracy != 0.0 else (1, decision[1])
+            )
         if decision_only:
             return decision - 1
         if decision == 2 or accuracy == 0.0:
@@ -86,7 +96,7 @@ class MabController(Controller):
             self.write_debug(
                 {
                     "Model_Parameters": {
-                        "epsilon": self.__epsilon,
+                        "epsilon": self.__cover,
                         "cover": self.__cover,
                     },
                     "Point": point,

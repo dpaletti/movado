@@ -32,7 +32,7 @@ class HoeffdingAdaptiveTreeModel(Model):
         )
         self._model = rv.expert.SuccessiveHalvingRegressor(
             models=models,
-            metric=rv.metrics.MAE(),
+            metric=rv.metrics.RMSE(),
             budget=budget,
             eta=eta,
             verbose=True,

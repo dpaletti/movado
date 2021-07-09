@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 from vowpalwabbit import pyvw
 from movado.mab_handler import MabHandler
@@ -9,8 +9,8 @@ class MabHandlerCB(MabHandler):
     def __init__(
         self,
         arms: int,
+        cover: int = 3,
         debug: bool = False,
-        cover: float = 3,
         controller_params: dict = None,
         debug_path: str = "mab",
         skip_debug_initialization: bool = False,
@@ -25,7 +25,9 @@ class MabHandlerCB(MabHandler):
             "--cb_explore " + str(arms) + " --cover " + str(cover) + " --quiet"
         )
 
-    def predict(self, context: List[float]) -> int:
+    def predict(
+        self, context: List[float], probability: bool = False
+    ) -> Union[int, Tuple[int, float]]:
         context_str: str = "| "
         for feature in context:
             context_str += str(feature) + " "
@@ -35,6 +37,12 @@ class MabHandlerCB(MabHandler):
         )
         self._last_predict_probability = prediction[1]
         self._last_action = prediction[0]
+        if probability:
+            return (
+                (prediction[0] + 1, self._last_predict_probability)
+                if self._last_action == 0
+                else (prediction[0] + 1, 1 - self._last_predict_probability)
+            )
         return prediction[0] + 1
 
     @staticmethod

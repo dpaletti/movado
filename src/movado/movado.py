@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from typing import List, Callable
+import numpy as np
 
 from movado.controller import Controller
 from movado.estimator import Estimator
@@ -60,6 +61,9 @@ def approximate(
                 )
                 # TODO add multi-output non-chained estimators
                 outputs: int = kwargs.get("outputs")
+                voters: int = kwargs.get("voters")
+                if not voters:
+                    voters = 750
                 if not outputs:
                     raise Exception(
                         "Please specify outputs as a kwarg as the number of targets of the fitness function"
@@ -85,26 +89,28 @@ def approximate(
                 if selected_controller is MabController:
                     params = OrderedDict(
                         {
-                            "cover": [3, 5, 7, 11, 20],
-                            "mab_weight_epsilon": [0.1, 0.2, 0.3, 0.4],
-                            "mab_weight_bandwidth": [1, 5, 10, 20, 50, 75],
+                            "cover": list(range(3, 20)),
+                            "mab_weight_epsilon": [i / 100 for i in range(1, 41)],
+                            "mab_weight_bandwidth": list(range(3, 7)),
                         }
                     )
                 else:
-                    # All other cases are handled as a DistanceController
                     params = OrderedDict(
                         {
-                            "nth_nearest": [1, 3, 5, 7],
-                            "mab_epsilon": [0.1, 0.2, 0.3],
-                            "mab_bandwidth": [1, 5, 10, 20],
-                            "mab_weight_epsilon": [0.1, 0.2, 0.3],
-                            "mab_weight_bandwidth": [1, 5, 10, 20],
+                            "nth_nearest": list(range(1, 6)),
+                            "mab_epsilon": [i / 100 for i in range(1, 41)],
+                            "mab_bandwidth": list(range(3, 7)),
+                            "mab_weight_epsilon": [i / 100 for i in range(1, 41)],
+                            "mab_weight_bandwidth": list(range(3, 7)),
                         }
                     )
+                available_models = int(np.prod([len(v) for v in params.values()]))
+                voters = voters if voters <= available_models else available_models
                 controller = VotingController(
                     controller,
                     estimator,
                     func,
+                    voters,
                     params,
                     self_exact=None if len(wrapper_args) == 1 else wrapper_args[0],
                     **{
