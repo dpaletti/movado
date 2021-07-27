@@ -1,5 +1,6 @@
 from collections import OrderedDict
-from typing import List, Callable
+from numbers import Number
+from typing import List, Callable, Union
 import numpy as np
 
 from movado.controller import Controller
@@ -19,6 +20,9 @@ from movado.mab_controller import MabController  # pylint: disable=unused-import
 from movado.voting_controller import VotingController  # pylint: disable=unused-import
 
 # noinspection PyUnresolvedReferences
+from movado.shadow_controller import ShadowController
+
+# noinspection PyUnresolvedReferences
 from movado.kernel_regression_model import (
     KernelRegressionModel,
 )  # pylint: disable=unused-import
@@ -35,14 +39,16 @@ def approximate(
         controller: Controller
         estimator: Estimator
         is_first_call: bool = True
+        outputs: int = -1
 
         @wraps(func)
-        def wrapper(*wrapper_args) -> List[float]:
+        def wrapper(*wrapper_args) -> Union[List[float], float]:
             # args must either contain the point to be analyzed
             # or it must contain self (for class methods) and then the point
             nonlocal is_first_call
             nonlocal controller
             nonlocal estimator
+            nonlocal outputs
             if len(wrapper_args) < 1 or len(wrapper_args) > 2:
                 raise Exception(
                     "The decorated function must have a single input which is a list of numbers, "
@@ -60,7 +66,7 @@ def approximate(
                     HoeffdingAdaptiveTreeModel if not selected_model else selected_model
                 )
                 # TODO add multi-output non-chained estimators
-                outputs: int = kwargs.get("outputs")
+                outputs = kwargs.get("outputs")
                 voters: int = kwargs.get("voters")
                 if not voters:
                     voters = 750
@@ -106,23 +112,34 @@ def approximate(
                     )
                 available_models = int(np.prod([len(v) for v in params.values()]))
                 voters = voters if voters <= available_models else available_models
-                controller = VotingController(
-                    controller,
-                    estimator,
-                    func,
-                    voters,
-                    params,
-                    self_exact=None if len(wrapper_args) == 1 else wrapper_args[0],
-                    **{
-                        k[k.find("_") + 1 :]: v
-                        for k, v in kwargs.items()
-                        if k[: k.find("_")] == "controller"
-                    },
-                )
-
-            return list(
-                controller.compute_objective(point)
-            )  # we expect the first and only argument of the function to be the input point
+                if voters <= 1:
+                    controller = controller(
+                        exact_fitness=func,
+                        estimator=estimator,
+                        self_exact=None if len(wrapper_args) == 1 else wrapper_args[0],
+                        **{
+                            k[k.find("_") + 1 :]: v
+                            for k, v in kwargs.items()
+                            if k[: k.find("_")] == "controller"
+                        },
+                    )
+                else:
+                    controller = VotingController(
+                        controller,
+                        estimator,
+                        func,
+                        voters,
+                        params,
+                        self_exact=None if len(wrapper_args) == 1 else wrapper_args[0],
+                        **{
+                            k[k.find("_") + 1 :]: v
+                            for k, v in kwargs.items()
+                            if k[: k.find("_")] == "controller"
+                        },
+                    )
+            if outputs == 1:
+                return list(controller.compute_objective(point))[0]
+            return list(controller.compute_objective(point))
 
         if kwargs.get("disabled"):
             return func

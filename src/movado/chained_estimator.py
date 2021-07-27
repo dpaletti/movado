@@ -1,5 +1,5 @@
 import river as rv
-from typing import List, Dict
+from typing import List, Dict, Union
 from movado.estimator import Estimator
 from movado.model import Model
 
@@ -27,9 +27,10 @@ class ChainedEstimator(Estimator):
     def predict(self, X: List[float]) -> List[float]:
         if not self._chained_model.order:
             self._chained_model.order = list(range(len(X)))
-        return self._chained_model.predict_one(
+        prediction = self._chained_model.predict_one(
             self.X_to_river(X),
         ).values()  # Here a dict is returned, wrong typing in river 0.7.0
+        return prediction
 
     def get_error(self) -> float:
         return self._metric.get()

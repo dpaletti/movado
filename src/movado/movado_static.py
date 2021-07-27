@@ -7,6 +7,9 @@ from movado.mab_controller import MabController  # pylint: disable=unused-import
 from movado.voting_controller import VotingController  # pylint: disable=unused-import
 
 # noinspection PyUnresolvedReferences
+from movado.shadow_controller import ShadowController  # pylint: disable=unused-import
+
+# noinspection PyUnresolvedReferences
 from movado.distance_controller import (
     DistanceController,
 )  # pylint: disable=unused-import

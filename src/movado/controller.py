@@ -1,4 +1,5 @@
 from abc import abstractmethod, ABC
+from numbers import Number
 from typing import Tuple, Optional, Callable, Any, List, Dict, Union
 from scipy.stats import PearsonRConstantInputWarning
 from sklearn.preprocessing import StandardScaler
@@ -100,8 +101,6 @@ class Controller(ABC):
         is_point_in_context: bool = True,
     ):
 
-        self.__time_dataset.append(exec_time)
-        self.__error_dataset.append(0 if is_exact else self._estimator.get_error())
         if mab:
             if mab_weight:
                 time_weight = (
@@ -154,6 +153,8 @@ class Controller(ABC):
         else:
             exact, exec_time = Controller.measure_execution_time(self._exact, point)
 
+        self.__time_dataset.append(exec_time)
+        self.__error_dataset.append(0)
         _, learn_time = Controller.measure_execution_time(
             self.learn,
             is_exact=True,
@@ -178,7 +179,8 @@ class Controller(ABC):
         #    mab_weight_forced_probability=mab_weight_forced_probability,
         #    is_point_in_context=is_point_in_context,
         # )
-
+        if np.isscalar(exact):
+            exact = [exact]
         self._estimator.train(point, exact)
         return exact, exec_time
 
