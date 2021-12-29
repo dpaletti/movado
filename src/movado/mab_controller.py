@@ -5,6 +5,7 @@ from movado.controller import Controller
 from movado.estimator import Estimator
 from movado.mab_handler_cb import MabHandlerCB
 from movado.mab_handler_cats import MabHandlerCATS
+from movado.controller import is_call_exact
 
 
 class MabController(Controller):
@@ -58,7 +59,7 @@ class MabController(Controller):
 
     def initialize_debug(self):
         Path(self._controller_debug).open("a").write(
-            "Model_Parameters, Point, Exec_Time, Error, Estimation\n"
+            "Point, Exec_Time, Error, Exact_Estimated_Calls\n"
         )
 
     def compute_objective(
@@ -92,14 +93,14 @@ class MabController(Controller):
         if self._debug:
             self.write_debug(
                 {
-                    "Model_Parameters": {
-                        "epsilon": self.__cover,
-                        "cover": self.__cover,
-                    },
                     "Point": point,
                     "Exec_Time": exec_time,
                     "Error": self._estimator.get_error(),
-                    "Estimation": 0 if decision == 2 or accuracy == 0.0 else 1,
+                    "Estimation": 0 if decision == 1 or accuracy == 0.0 else 1,
+                    "Exact_Estimated_Calls": [
+                        is_call_exact.count(True),
+                        is_call_exact.count(False),
+                    ],
                 }
             )
         self.__is_first_call = False
@@ -107,15 +108,13 @@ class MabController(Controller):
 
     def write_debug(self, debug_info: Dict[str, Any]):
         Path(self._controller_debug).open("a").write(
-            str(debug_info["Model_Parameters"])
-            + ", "
-            + str(debug_info["Point"])
+            str(debug_info["Point"])
             + ", "
             + str(debug_info["Exec_Time"])
             + ", "
             + str(debug_info["Error"])
             + ", "
-            + str(debug_info["Estimation"])
+            + str(debug_info["Exact_Estimated_Calls"])
             + "\n"
         )
 

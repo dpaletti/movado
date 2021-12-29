@@ -37,7 +37,7 @@ class Controller(ABC):
         self._debug = debug
         self._self_exact = self_exact
         model = rv.preprocessing.StandardScaler()
-        model |= rv.feature_extraction.RBFSampler()
+        model |= rv.feature_extraction.RBFSampler(seed=0)
         model |= rv.linear_model.LinearRegression()
         models = rv.utils.expand_param_grid(
             model,

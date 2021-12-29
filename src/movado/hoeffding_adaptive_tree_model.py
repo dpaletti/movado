@@ -11,10 +11,10 @@ class HoeffdingAdaptiveTreeModel(Model):
     ):
         super(HoeffdingAdaptiveTreeModel, self).__init__()
         self._model = rv.preprocessing.StandardScaler()
-        self._model |= rv.feature_extraction.RBFSampler()
+        self._model |= rv.feature_extraction.RBFSampler(seed=0)
 
         self._model |= rv.tree.HoeffdingAdaptiveTreeRegressor(
-            leaf_prediction="adaptive"
+            leaf_prediction="adaptive", seed=0
         )
         models = rv.utils.expand_param_grid(
             self._model,

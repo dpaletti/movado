@@ -15,12 +15,22 @@ class MabHandlerCATS(MabHandler):
         debug_path: str = "mab",
         skip_debug_initialization: bool = False,
     ):
+        """
+        CATS parameters interpretation:
+        - the range of outputs is (min_value, max_value), in our case (0, 100)
+        - mab_actions determines the number of buckets (discretization) we apply to the range,
+          in our case range is actions is 100 thus we have 100 buckets of length 1 ((0, 1], [1, 2], ..., [99, 100))
+        - bandwidth determines the density function of the outputs for each bucket outputs
+          will be more dense around [bucket_center+bandwidth, bucket_center-bandwidth]
+          where bucket_center = (bucket_min + bucket_max)/2. In our case bandwidth defaults to 1.
+        """
         super(MabHandlerCATS, self).__init__(
             debug,
             debug_path,
             controller_params=controller_params,
             skip_debug_initialization=skip_debug_initialization,
         )
+
         self._sample_prefix = "ca "
         if bandwidth < 0:
             raise Exception(
@@ -41,6 +51,7 @@ class MabHandlerCATS(MabHandler):
             + " --min_value 0 --max_value 100 --chain_hash --coin --epsilon "
             + str(epsilon)
             + " --quiet"
+            + " --random_seed 0"
         )
 
     def predict(self, context: List[float]) -> float:

@@ -49,6 +49,7 @@ def approximate(
             nonlocal controller
             nonlocal estimator
             nonlocal outputs
+
             if len(wrapper_args) < 1 or len(wrapper_args) > 2:
                 raise Exception(
                     "The decorated function must have a single input which is a list of numbers, "

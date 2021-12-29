@@ -22,7 +22,12 @@ class MabHandlerCB(MabHandler):
             skip_debug_initialization=skip_debug_initialization,
         )
         self._mab = pyvw.vw(
-            "--cb_explore " + str(arms) + " --cover " + str(cover) + " --quiet"
+            "--cb_explore "
+            + str(arms)
+            + " --cover "
+            + str(cover)
+            + " --quiet"
+            + " --random_seed 0"
         )
 
     def predict(
