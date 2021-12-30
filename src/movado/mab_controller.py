@@ -20,6 +20,7 @@ class MabController(Controller):
         mab_weight: bool = True,
         mab_weight_epsilon: float = 0.2,
         mab_weight_bandwidth: int = 1,
+        stochastic: bool = False,
     ):
         super().__init__(
             exact_fitness=exact_fitness,
@@ -54,6 +55,8 @@ class MabController(Controller):
             )
         self.__is_first_call = True
 
+        self.__exact_calls_cache = {}
+        self.__stochastic = stochastic
         if self._debug and not skip_debug_initialization:
             self.initialize_debug()
 
@@ -63,11 +66,25 @@ class MabController(Controller):
         )
 
     def compute_objective(
-        self,
-        point: List[int],
-        decision_only: bool = False,
-        probability=False,
+        self, point: List[int], decision_only: bool = False, probability=False,
     ) -> Union[List[float], int, Tuple[int, float]]:
+        cached_value = self.__exact_calls_cache.get(tuple(point))
+        if not self.__stochastic and cached_value:
+            print("Using Cached Exact Value...")
+            if self._debug:
+                self.write_debug(
+                    {
+                        "Point": point,
+                        "Exec_Time": 0,
+                        "Error": self._estimator.get_error(),
+                        "Estimation": 0,
+                        "Exact_Estimated_Calls": [
+                            is_call_exact.count(True),
+                            is_call_exact.count(False),
+                        ],
+                    }
+                )
+            return cached_value
         decision = self.__mab.predict(
             self._compute_controller_context(point), probability=probability
         )
@@ -84,6 +101,9 @@ class MabController(Controller):
                 self.__weight_mab,
                 1 if accuracy == 0.0 else None,
             )
+            if not self.__stochastic:
+                self.__exact_calls_cache[tuple(point)] = out
+
         else:
             out, exec_time = self._compute_estimated(
                 point, (self.__mab, 0), self.__weight_mab

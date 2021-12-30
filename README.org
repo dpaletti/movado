@@ -1,0 +1,38 @@
+#+TITLE: README
+* Installation
+Movado needs python 3.6 or higher. Install it through pip (on many linux systems you need to use pip3 to force python3 installation):
+#+begin_src bash
+pip3 install --user --no-cache dovado-rtl
+#+end_src
+* Usage
+Movado exposes just an annotation which you need to apply to the fitness function you want to approximate:
+#+begin_src python
+@approximate(outputs=3)
+def fitness(point: List[Number]) -> List[Number]:
+    # my fitness logic
+
+class SomeClass:
+    def __init__():
+        ...
+    @approximate(outputs=1)
+    def fitness(self, point: List[Number]) -> List[Number]:
+        # this is also allowed
+#+end_src
+The only mandatory parameter to approximate is the *number of objectives* of your optimization problem, in the above case the fitness function returns a list of 3 floats and takes as input a list of numbers.
+*Fitness Function Structure*:
+1. the fitness function must take only a list of numbers as input. If we approximate a method in a class ~self~ is allowed as first parameter but it must be strictly followed by the list of numbers
+2. the fitness function must output a list of numbers with constant length between fitness evaluation
+* Parameters
+Other than ~outputs~ several other optional parameters are available
+| Parameter  | Description                | Default Value         |
+|------------+----------------------------+-----------------------|
+| disabled   | if True the approximation  | False                 |
+|            | is disabled                |                       |
+|------------+----------------------------+-----------------------|
+| stochastic | if True caching of fitness | False                 |
+|            | calls is disabled          |                       |
+|------------+----------------------------+-----------------------|
+| estimator  | estimator to use           | HoeffdingAdaptiveTree |
+|------------+----------------------------+-----------------------|
+| controller | controller to user         | Mab                   |
+|------------+----------------------------+-----------------------|

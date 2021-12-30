@@ -9,7 +9,7 @@ sleep_time = 5
 
 
 class TestClass:
-    @approximate(outputs=3, controller="Shadow", controller_debug=True, voters=-1)
+    @approximate(outputs=3, controller="Mab", controller_debug=True, voters=-1)
     def sleep_func(self, point: List[float]) -> List[float]:
         global sleep_time
         x = np.linspace(-np.pi, np.pi, 201)

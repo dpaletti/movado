@@ -1,11 +1,11 @@
 [tool.poetry]
 name = "Movado"
-version = "0.4.30"
+version = "0.5.12"
 description =  "Approximation utility for expensive fitness functions"
 authors = ["Daniele Paletti <danielepaletti98@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = "~3.6"
+python = "^3.6.1"
 numpy = "^1.19"
 scipy = "^1.5.4"
 vowpalwabbit = "^8.9.0"

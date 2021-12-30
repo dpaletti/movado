@@ -217,7 +217,8 @@ class Controller(ABC):
     def _compute_weighting_context(mab_loss: float) -> List[float]:
         global is_call_exact
         exact_calls = is_call_exact.count(True)
-        return [mab_loss, exact_calls, len(is_call_exact) - exact_calls]
+        # return [mab_loss, exact_calls, len(is_call_exact) - exact_calls]
+        return [exact_calls, len(is_call_exact) - exact_calls]
 
     def _compute_estimated(
         self,
@@ -251,16 +252,6 @@ class Controller(ABC):
         Path(self.__controller_learn_time_debug).open("a").write(
             str(learn_time) + "," + str(1) + "\n"
         )
-        # self.learn(
-        #    is_exact=False,
-        #    point=point,
-        #    exec_time=exec_time,
-        #    mab=mab,
-        #    mab_forced_probability=None,
-        #    mab_weight=mab_weight,
-        #    mab_weight_forced_probability=None,
-        #    is_point_in_context=is_point_in_context,
-        # )
 
         return estimation, exec_time
 
@@ -386,7 +377,7 @@ class Controller(ABC):
         importance_sum = self.__time_importance + self.__error_importance
         time_importance = self.__time_importance / importance_sum
         error_importance = self.__error_importance / importance_sum
-        return np.abs(time_importance - error_importance)
+        return (0.5 - time_importance) ** 2 + (0.5 - error_importance) ** 2
 
     @staticmethod
     def measure_execution_time(
