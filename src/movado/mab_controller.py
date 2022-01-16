@@ -66,7 +66,10 @@ class MabController(Controller):
         )
 
     def compute_objective(
-        self, point: List[int], decision_only: bool = False, probability=False,
+        self,
+        point: List[int],
+        decision_only: bool = False,
+        probability=False,
     ) -> Union[List[float], int, Tuple[int, float]]:
         cached_value = self.__exact_calls_cache.get(tuple(point))
         if not self.__stochastic and cached_value:
@@ -113,14 +116,16 @@ class MabController(Controller):
         if self._debug:
             self.write_debug(
                 {
-                    "Point": point,
+                    "Point": str(point),
                     "Exec_Time": exec_time,
                     "Error": self._estimator.get_error(),
                     "Estimation": 0 if decision == 1 or accuracy == 0.0 else 1,
-                    "Exact_Estimated_Calls": [
-                        is_call_exact.count(True),
-                        is_call_exact.count(False),
-                    ],
+                    "Exact_Estimated_Calls": str(
+                        [
+                            is_call_exact.count(True),
+                            is_call_exact.count(False),
+                        ]
+                    ).replace(",", ""),
                 }
             )
         self.__is_first_call = False

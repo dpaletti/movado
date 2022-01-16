@@ -70,7 +70,7 @@ class MabHandler(ABC):
                 else ""
             )
             Path(self.__mab_debug).open("a").write(
-                optional_params
+                str(optional_params).replace(",", "")
                 + str(np.mean(self.__costs))
                 + ", "
                 + (
@@ -79,7 +79,7 @@ class MabHandler(ABC):
                     else str(forced_action)
                 )
                 + ", "
-                + str(context)
+                + str(context).replace(",", "")
                 + ", "
                 + (
                     str(self._last_predict_probability)
