@@ -4,7 +4,7 @@
 1.  [Installation](#org32f73e8)
 2.  [Usage](#org407d412)
 3.  [Parameters](#org6d82707)
-4. [Associated Publication](#paper_ref)
+4.  [Associated Publication](#paper_ref)
 
 
 
