@@ -111,3 +111,15 @@ Other than `outputs` several other optional parameters are available
 </tbody>
 </table>
 
+# Associated Publication
+
+```
+@inproceedings{paletti2021online,
+  title={Online Learning RTL Synthesis for Automated Design Space Exploration},
+  author={Paletti, Daniele and Peverelli, Francesco and Conficconi, Davide and Santambrogio, Marco D},
+  booktitle={2022 IEEE International Parallel and Distributed Processing Symposium Workshops (IPDPSW)},
+  year={2022},
+  organization={IEEE}
+}
+```
+
