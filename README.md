@@ -4,6 +4,7 @@
 1.  [Installation](#org32f73e8)
 2.  [Usage](#org407d412)
 3.  [Parameters](#org6d82707)
+4. [Associated Publication](#paper_ref)
 
 
 
@@ -110,4 +111,19 @@ Other than `outputs` several other optional parameters are available
 </tr>
 </tbody>
 </table>
+
+<a id="paper_ref"></a>
+# Associated Publication
+
+If you find this repository useful, please use the following citation:
+
+```
+@inproceedings{paletti2021online,
+  title={Online Learning RTL Synthesis for Automated Design Space Exploration},
+  author={Paletti, Daniele and Peverelli, Francesco and Conficconi, Davide and Santambrogio, Marco D},
+  booktitle={2022 IEEE International Parallel and Distributed Processing Symposium Workshops (IPDPSW)},
+  year={2022},
+  organization={IEEE}
+}
+```
 
