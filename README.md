@@ -13,7 +13,7 @@
 
 Movado needs python 3.6 or higher. Install it through pip (on many linux systems you need to use pip3 to force python3 installation):
 
-    pip3 install --user --no-cache dovado-rtl
+    pip3 install --user --no-cache movado
 
 
 <a id="org407d412"></a>
