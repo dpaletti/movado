@@ -1,5 +1,4 @@
 from collections import OrderedDict
-from numbers import Number
 from typing import List, Callable, Union
 import numpy as np
 
@@ -9,7 +8,6 @@ from functools import wraps
 from movado.distance_controller import DistanceController
 from movado.hoeffding_adaptive_tree_model import HoeffdingAdaptiveTreeModel
 from movado.chained_estimator import ChainedEstimator
-import movado.movado_static
 
 
 # This imports are unused but populate the global symbol table for the globals() call

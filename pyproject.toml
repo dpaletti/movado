@@ -1,18 +1,18 @@
 [tool.poetry]
 name = "Movado"
-version = "0.6.3"
+version = "0.7"
 description =  "Approximation utility for expensive fitness functions"
 authors = ["Daniele Paletti <danielepaletti98@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.6.1"
+python = "^3.9"
 numpy = "^1.19"
-scipy = "^1.5.4"
-vowpalwabbit = "^8.9.0"
-river = "^0.7.0"
-plotly = "^4.14.3"
-scikit-learn = "^0.24.2"
-joblib = "^1.0.1"
+scipy = "^1.5"
+vowpalwabbit = "^8"
+river = "0.14"
+plotly = "^4.14"
+scikit-learn = "^0.24"
+joblib = "^1.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"

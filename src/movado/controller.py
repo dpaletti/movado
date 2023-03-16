@@ -1,15 +1,17 @@
 from abc import abstractmethod, ABC
-from numbers import Number
 from typing import Tuple, Optional, Callable, Any, List, Dict, Union
-from scipy.stats import PearsonRConstantInputWarning
 from sklearn.preprocessing import StandardScaler
 import numpy as np
 import scipy as sp
 import time
 from pathlib import Path
-import river as rv
+from river.preprocessing import StandardScaler as RiverStandardScaler
+from river.feature_extraction import RBFSampler
+from river.linear_model import LinearRegression
+from river.utils import expand_param_grid
+from river.model_selection import SuccessiveHalvingRegressor
+from river.metrics import RMSE
 from collections import deque
-
 from movado.estimator import Estimator
 from movado.mab_handler import MabHandler
 from movado.chained_estimator import ChainedEstimator
@@ -36,10 +38,10 @@ class Controller(ABC):
         self._estimator: Estimator = estimator
         self._debug = debug
         self._self_exact = self_exact
-        model = rv.preprocessing.StandardScaler()
-        model |= rv.feature_extraction.RBFSampler(seed=0)
-        model |= rv.linear_model.LinearRegression()
-        models = rv.utils.expand_param_grid(
+        model = RiverStandardScaler()
+        model |= RBFSampler(seed=0)
+        model |= LinearRegression()
+        models = expand_param_grid(
             model,
             {
                 "LinearRegression": {
@@ -48,16 +50,16 @@ class Controller(ABC):
                 "RBFSampler": {"gamma": [1e-3, 1e-1, 1, 10]},
             },
         )
-        self.__time_model = rv.expert.SuccessiveHalvingRegressor(
+        self.__time_model = SuccessiveHalvingRegressor(
             models=models,
-            metric=rv.metrics.RMSE(),
+            metric=RMSE(),
             budget=1,
             eta=10000,
             verbose=True,
         )
-        self.__error_model = rv.expert.SuccessiveHalvingRegressor(
+        self.__error_model = SuccessiveHalvingRegressor(
             models=models,
-            metric=rv.metrics.RMSE(),
+            metric=RMSE(),
             budget=1,
             eta=10000,
             verbose=True,
@@ -310,8 +312,8 @@ class Controller(ABC):
             )[0]
             R2 = np.sqrt(
                 (
-                    np.abs(time_cost_correlation ** 2)
-                    + np.abs(error_cost_correlation ** 2)
+                    np.abs(time_cost_correlation**2)
+                    + np.abs(error_cost_correlation**2)
                     - 2
                     * time_cost_correlation
                     * error_cost_correlation
@@ -322,7 +324,7 @@ class Controller(ABC):
             if R2 == np.nan:
                 return 0
             R2_adj = 1 - (
-                ((1 - R2 ** 2) * (samples - 1)) / (samples - independent_vars - 1)
+                ((1 - R2**2) * (samples - 1)) / (samples - independent_vars - 1)
             )
             return -R2_adj
         except ValueError:

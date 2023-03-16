@@ -1,4 +1,9 @@
-import river as rv
+from river.preprocessing import StandardScaler
+from river.feature_extraction import RBFSampler
+from river.tree.hoeffding_adaptive_tree_regressor import HoeffdingAdaptiveTreeRegressor
+from river.model_selection import SuccessiveHalvingRegressor
+from river.utils import expand_param_grid
+from river.metrics import RMSE
 
 from movado.model import Model
 
@@ -10,13 +15,13 @@ class HoeffdingAdaptiveTreeModel(Model):
         budget=2000,
     ):
         super(HoeffdingAdaptiveTreeModel, self).__init__()
-        self._model = rv.preprocessing.StandardScaler()
-        self._model |= rv.feature_extraction.RBFSampler(seed=0)
+        self._model = StandardScaler()
+        self._model |= RBFSampler(seed=0)
 
-        self._model |= rv.tree.HoeffdingAdaptiveTreeRegressor(
+        self._model |= HoeffdingAdaptiveTreeRegressor(
             leaf_prediction="adaptive", seed=0
         )
-        models = rv.utils.expand_param_grid(
+        models = expand_param_grid(
             self._model,
             {
                 "HoeffdingAdaptiveTreeRegressor": {
@@ -30,9 +35,9 @@ class HoeffdingAdaptiveTreeModel(Model):
                 "RBFSampler": {"gamma": [1e-3, 1e-1, 1, 10]},
             },
         )
-        self._model = rv.expert.SuccessiveHalvingRegressor(
+        self._model = SuccessiveHalvingRegressor(
             models=models,
-            metric=rv.metrics.RMSE(),
+            metric=RMSE(),
             budget=budget,
             eta=eta,
             verbose=True,

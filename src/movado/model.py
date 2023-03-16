@@ -1,9 +1,9 @@
-from abc import ABC, abstractmethod
-import river as rv
+from abc import ABC
+from river.base.regressor import Regressor
 
 
 class Model(ABC):
-    _model: rv.base.regressor
+    _model: Regressor
 
     def __init__(self, **kwargs):
         pass

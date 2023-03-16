@@ -1,5 +1,8 @@
 import river as rv
-import numpy as np
+from river.preprocessing import StandardScaler
+from river.feature_extraction import RBFSampler
+from river.linear_model import LinearRegression
+from river.utils import expand_param_grid
 
 from movado.model import Model
 
@@ -11,12 +14,12 @@ class KernelRegressionModel(Model):
         budget=2000,
     ):
         super(KernelRegressionModel, self).__init__()
-        self._model = rv.preprocessing.StandardScaler()
-        self._model |= rv.feature_extraction.RBFSampler()
+        self._model = StandardScaler()
+        self._model |= RBFSampler()
 
-        self._model |= rv.linear_model.LinearRegression()
+        self._model |= LinearRegression()
 
-        models = rv.utils.expand_param_grid(
+        models = expand_param_grid(
             self._model,
             {
                 "LinearRegression": {
