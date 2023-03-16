@@ -14,7 +14,7 @@ class MabController(Controller):
         exact_fitness: Callable[[List[float]], List[float]],
         estimator: Estimator,
         self_exact: Optional[object] = None,
-        debug: bool = False,
+        debug: bool = True,
         skip_debug_initialization=False,
         cover: int = 3,
         mab_weight: bool = True,

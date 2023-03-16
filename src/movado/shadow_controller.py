@@ -12,7 +12,7 @@ class ShadowController(Controller):
         exact_fitness: Callable[[List[float]], List[float]] = None,
         estimator: Estimator = None,
         self_exact: Optional[object] = None,
-        debug: bool = False,
+        debug: bool = True,
         **kwarg
     ):
         super(ShadowController, self).__init__(

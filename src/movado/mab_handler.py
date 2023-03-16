@@ -7,7 +7,7 @@ import numpy as np
 class MabHandler(ABC):
     def __init__(
         self,
-        debug: bool = False,
+        debug: bool = True,
         debug_path: str = "mab",
         skip_debug_initialization: bool = False,
         controller_params=None,

@@ -35,7 +35,7 @@ class VotingController(Controller):
         self_exact: Optional[object] = None,
         is_point_in_context: bool = False,
         mab_weight: bool = True,
-        debug=False,
+        debug: bool = True,
     ):
 
         super(VotingController, self).__init__(

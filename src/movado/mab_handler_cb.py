@@ -10,7 +10,7 @@ class MabHandlerCB(MabHandler):
         self,
         arms: int,
         cover: int = 3,
-        debug: bool = False,
+        debug: bool = True,
         controller_params: dict = None,
         debug_path: str = "mab",
         skip_debug_initialization: bool = False,

@@ -26,7 +26,7 @@ class Controller(ABC):
         exact_fitness: Callable[[List[float]], List[float]] = None,
         estimator: Estimator = None,
         self_exact: Optional[object] = None,
-        debug: bool = False,
+        debug: bool = True,
         **kwargs
     ):
         self.__scaler = StandardScaler()

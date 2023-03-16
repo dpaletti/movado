@@ -21,7 +21,7 @@ class DistanceController(Controller):
         nth_nearest=3,
         distance_metric="minkowski",
         threshold="mab",
-        debug=False,
+        debug=True,
         skip_debug_initialization=False,
         mab_epsilon: float = 0.2,
         mab_bandwidth: int = 1,

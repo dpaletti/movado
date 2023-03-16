@@ -10,7 +10,7 @@ class MabHandlerCATS(MabHandler):
         self,
         bandwidth: int = 1,
         epsilon: float = 0.2,
-        debug=False,
+        debug=True,
         controller_params: dict = None,
         debug_path: str = "mab",
         skip_debug_initialization: bool = False,
