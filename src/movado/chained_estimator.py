@@ -1,5 +1,5 @@
 from river.multioutput import RegressorChain
-from river.metrics.multioutput import MacroAverage
+from river.metrics.multioutput import MicroAverage
 from river.metrics import RMSE
 from typing import List, Dict
 from movado.estimator import Estimator
@@ -12,7 +12,7 @@ class ChainedEstimator(Estimator):
         self._chained_model: RegressorChain = RegressorChain(
             model_to_chain.get_model(), order=list(range(outputs))
         )
-        self._metric = MacroAverage(RMSE())
+        self._metric = MicroAverage(RMSE())
 
     def train(self, X: List[float], y: List[float]) -> None:
         y_true = self.y_to_river(y)
