@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "Movado"
-version = "0.7.3"
+version = "0.7.4"
 description =  "Approximation utility for expensive fitness functions"
 authors = ["Daniele Paletti <danielepaletti98@gmail.com>"]
 
