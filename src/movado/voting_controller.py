@@ -82,7 +82,12 @@ class VotingController(Controller):
         mab_weight_forced_action: Optional[Union[int, float]] = None,
         is_point_in_context: bool = True,
     ):
-        loop = asyncio.get_event_loop()
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
         executor = concurrent.futures.ThreadPoolExecutor(
             max_workers=int(multiprocessing.cpu_count() / 2)
         )
@@ -217,7 +222,13 @@ class VotingController(Controller):
         self, point: List[int], decision_only: bool = False
     ) -> List[float]:
         decisions = []
-        loop = asyncio.get_event_loop()
+
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
         executor = concurrent.futures.ThreadPoolExecutor(
             max_workers=int(multiprocessing.cpu_count() / 2)
         )
